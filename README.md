@@ -1,18 +1,20 @@
 # 🗺️ Where To? — Frontend
 
-> A real-time collaborative room platform where users can create or join rooms, explore destinations, and connect with others — built with React + Vite.
+> React + Vite client for the **Where To?** platform — a real-time collaborative platform where users can explore nearby places solo or connect in group lobbies to chat, vote on games, discover movies, and sync Pomodoro study timers.
 
 ---
 
 ## ✨ Features
 
-- 🔐 **Authentication** — Register & Login with JWT-based auth
-- 🏠 **Rooms** — Create or join rooms with unique room IDs
-- 🔍 **Explore** — Browse and discover available rooms
-- 💬 **Real-time** — Live updates powered by Socket.io
-- 👤 **Profile** — View and manage your user profile
-- 🔒 **Protected Routes** — Authenticated-only access for sensitive pages
-- 📱 **Responsive Design** — Works across all screen sizes
+- 🔐 **JWT Auth integration** — Secure logins and signups with token persistence in localStorage and React Router route guards (Protected vs Guest routes).
+- 🧭 **Explore Mode (Solo Place Finder)** — Browser geolocation capturing, mood filter selectors, radius indicator sliders, place card grids, and Google Maps direction integrations.
+- 👤 **Saved Places Collection** — Profile page displaying personal user details and a list of saved venues with links and removal buttons.
+- 🏠 **Lobby Join & Create** — Lobbies created with name inputs and copy-to-clipboard buttons, alongside OTP-styled 6-character room code entry boxes.
+- 💬 **Socket Chat & Presence** — Sidebar tracking active room members, host tags, online indicators, and group text chat with system join/leave notices.
+- 🎮 **Game Lounge & Live Voting** — Lists of browser games with live voting panels (yes, no, maybe progress bars and host early end overrides).
+- 🎬 **Watch Lounge (TMDB & Streaming providers)** — Filter filters (moods, genres, languages), movie list summaries, movie proposals, and custom victory cards calling API to display logo shortcuts of streaming providers (Netflix, Prime Video, Disney+).
+- 📚 **Study Lounge (Pomodoro & Tasks)** — Synced circular SVG countdown timers for Work/Break phases, alongside personal local Todo checklists.
+- 📍 **Outing Lounge (midpoint planning)** — Geolocation submissions, submission status rosters, midpoint centroid search aggregations, and results place voting.
 
 ---
 
@@ -21,13 +23,13 @@
 | Technology | Purpose |
 |---|---|
 | React 19 | UI framework |
-| Vite | Build tool & dev server |
-| React Router v7 | Client-side routing |
-| Tailwind CSS | Styling |
-| Socket.io Client | Real-time communication |
-| Axios | HTTP requests |
-| React Toastify | Toast notifications |
-| React Icons | Icon library |
+| Vite | Frontend packaging and dev server |
+| React Router v7 | Client routing management |
+| Tailwind CSS v3 | Utility-first CSS styling |
+| Socket.io Client | Real-time connection client |
+| Axios | HTTP request interceptors |
+| React Toastify | Toast alerts and error warnings |
+| React Icons | Curated modern icon sets (Lucide/Fi) |
 
 ---
 
@@ -36,29 +38,39 @@
 ```
 frontend/
 ├── src/
-│   ├── components/
-│   │   └── layout/
-│   │       └── Navbar.jsx        # Navigation bar
+│   ├── assets/               # Static icons and logos
+│   ├── components/           # Reusable view components
+│   │   ├── common/           # Custom standard buttons / forms
+│   │   ├── layout/           # Navbar component
+│   │   ├── games/            # GameList, GameVoting modules (Phase 4)
+│   │   ├── movies/           # MovieFilters, MovieCard, WatchLounge (Phase 5)
+│   │   ├── outing/           # OutingFilters, OutingResults, OutingLounge (Phase 6)
+│   │   └── places/           # PlaceCard list items (Phase 2)
 │   ├── context/
-│   │   └── AuthContext.jsx       # Auth state management
+│   │   ├── AuthContext.jsx   # User authentication provider
+│   │   └── SocketContext.jsx # Socket.io-client provider
+│   ├── hooks/
+│   │   └── useGeolocation.js # Navigator geolocation hook
 │   ├── pages/
-│   │   ├── Home.jsx              # Landing page
-│   │   ├── Login.jsx             # Login page
-│   │   ├── Register.jsx          # Registration page
-│   │   ├── Profile.jsx           # User profile
-│   │   ├── Explore.jsx           # Browse rooms
-│   │   ├── CreateRoom.jsx        # Create a new room
-│   │   ├── JoinRoom.jsx          # Join by room ID
-│   │   └── Room.jsx              # Live room page
+│   │   ├── Home.jsx          # Mode selector landing page
+│   │   ├── Login.jsx         # Login form
+│   │   ├── Register.jsx      # Registration form
+│   │   ├── Explore.jsx       # Solo place finder explorer
+│   │   ├── CreateRoom.jsx    # Room creator & code copy
+│   │   ├── JoinRoom.jsx      # OTP room code input
+│   │   ├── Profile.jsx       # User details & favorites list
+│   │   └── Room.jsx          # Synced collaborative room panels
 │   ├── services/
-│   │   ├── api.js                # Axios instance & interceptors
-│   │   └── authService.js        # Auth API calls
-│   ├── App.jsx                   # Routes & route guards
-│   ├── main.jsx                  # App entry point
-│   └── index.css                 # Global styles
+│   │   ├── api.js            # Axios request configurations
+│   │   ├── authService.js    # Register/Login requests
+│   │   ├── placeService.js   # Save/Load place requests
+│   │   └── roomService.js    # Create/Join/Get room endpoints
+│   ├── App.jsx               # Protected/Guest Route routing wraps
+│   ├── main.jsx              # React mounting root
+│   └── index.css             # Component style layers & animations
 ├── index.html
-├── vite.config.js
-└── tailwind.config.js
+├── tailwind.config.js
+└── vite.config.js
 ```
 
 ---
@@ -67,12 +79,12 @@ frontend/
 
 ### Prerequisites
 - Node.js v18+
-- Backend server running (see [where-to-BE](https://github.com/aartisingh07/where-to-BE))
+- Backend API running locally or hosted (see [where-to-BE](https://github.com/aartisingh07/where-to-BE))
 
 ### Installation
 
 ```bash
-# Clone the repo
+# Clone the repository
 git clone https://github.com/aartisingh07/where-to-FE.git
 cd where-to-FE
 
@@ -82,7 +94,7 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file in the root:
+Create a `.env` file in the root directory:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
@@ -94,7 +106,7 @@ VITE_API_URL=http://localhost:5000/api
 npm run dev
 ```
 
-App will be available at `http://localhost:5173`
+The app will launch at `http://localhost:5173`.
 
 ---
 
@@ -104,7 +116,7 @@ App will be available at `http://localhost:5173`
 npm run build
 ```
 
-Output will be in the `dist/` folder.
+The production assets will be built into the `dist/` directory.
 
 ---
 
