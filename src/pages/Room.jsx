@@ -5,6 +5,11 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { roomService } from '../services/roomService';
+import GameList from '../components/games/GameList';
+import GameVoting from '../components/games/GameVoting';
+import WatchLounge from '../components/movies/WatchLounge';
+import StudyLounge from '../components/study/StudyLounge';
+import OutingLounge from '../components/outing/OutingLounge';
 
 // ─── Activity Selector ──────────────────────────────────────────
 const activities = [
@@ -57,7 +62,7 @@ const ComingSoon = ({ activity }) => {
 
 // ─── Main Room Page ────────────────────────────────────────────
 const Room = () => {
-  const { id } = useParams();
+  const { roomId: id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -70,6 +75,12 @@ const Room = () => {
   const [loading, setLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
+
+  // Voting States
+  const [activeVote, setActiveVote] = useState(null);
+  const [myVote, setMyVote] = useState(null);
+  const [voteTallies, setVoteTallies] = useState({ yes: 0, no: 0, maybe: 0 });
+  const [voteResult, setVoteResult] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -111,6 +122,33 @@ const Room = () => {
 
     socket.on('activity-changed', ({ activity: newActivity }) => {
       setActivity(newActivity);
+      setActiveVote(null);
+      setVoteResult(null);
+    });
+
+    socket.on('vote-started', ({ item, endTime, tallies }) => {
+      setActiveVote({ item, endTime });
+      setMyVote(null);
+      setVoteTallies(tallies || { yes: 0, no: 0, maybe: 0 });
+      setVoteResult(null);
+      toast.info(`🗳️ Vote started: ${item.name || item.title}`);
+    });
+
+    socket.on('vote-update', ({ votes, tallies }) => {
+      setVoteTallies(tallies);
+      if (votes && votes[user?._id]) {
+        setMyVote(votes[user?._id]);
+      }
+    });
+
+    socket.on('vote-result', (result) => {
+      setActiveVote(null);
+      setVoteResult(result);
+      if (result.result === 'approved') {
+        toast.success(`🎉 Passed: ${result.item.name || result.item.title}`);
+      } else {
+        toast.error(`❌ Rejected: ${result.item.name || result.item.title}`);
+      }
     });
 
     return () => {
@@ -118,8 +156,11 @@ const Room = () => {
       socket.off('new-message');
       socket.off('room-users-update');
       socket.off('activity-changed');
+      socket.off('vote-started');
+      socket.off('vote-update');
+      socket.off('vote-result');
     };
-  }, [socket, room, id]);
+  }, [socket, room, id, user?._id]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -130,6 +171,26 @@ const Room = () => {
     if (!messageInput.trim() || !socket) return;
     socket.emit('send-message', { roomId: id, content: messageInput });
     setMessageInput('');
+  };
+
+  const handlePropose = (item) => {
+    if (!socket) return;
+    socket.emit('start-vote', { roomId: id, item });
+  };
+
+  const handleVote = (vote) => {
+    if (!socket) return;
+    socket.emit('cast-vote', { roomId: id, vote });
+    setMyVote(vote);
+  };
+
+  const handleEndVote = () => {
+    if (!socket) return;
+    socket.emit('end-vote', { roomId: id });
+  };
+
+  const handleClearVoteResult = () => {
+    setVoteResult(null);
   };
 
   const handleSetActivity = async (newActivity) => {
@@ -251,12 +312,69 @@ const Room = () => {
           </div>
         </div>
 
-        {/* Main content area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {activity === 'none'
-            ? <ActivitySelector currentActivity={activity} isHost={isHost} onSelect={handleSetActivity} />
-            : <ComingSoon activity={activity} />
-          }
+          {activity === 'none' && (
+            <ActivitySelector currentActivity={activity} isHost={isHost} onSelect={handleSetActivity} />
+          )}
+          {activity === 'game' && (
+            (activeVote || voteResult) ? (
+              <GameVoting
+                activeVote={activeVote}
+                tallies={voteTallies}
+                userVote={myVote}
+                onVote={handleVote}
+                isHost={isHost}
+                onEnd={handleEndVote}
+                voteResult={voteResult}
+                onClear={handleClearVoteResult}
+              />
+            ) : (
+              <GameList onPropose={handlePropose} />
+            )
+          )}
+          {activity === 'watch' && (
+            (activeVote || voteResult) ? (
+              <GameVoting
+                activeVote={activeVote}
+                tallies={voteTallies}
+                userVote={myVote}
+                onVote={handleVote}
+                isHost={isHost}
+                onEnd={handleEndVote}
+                voteResult={voteResult}
+                onClear={handleClearVoteResult}
+              />
+            ) : (
+              <WatchLounge onPropose={handlePropose} />
+            )
+          )}
+          {activity === 'study' && (
+            <StudyLounge socket={socket} roomId={id} />
+          )}
+          {activity === 'outing' && (
+            (activeVote || voteResult) ? (
+              <GameVoting
+                activeVote={activeVote}
+                tallies={voteTallies}
+                userVote={myVote}
+                onVote={handleVote}
+                isHost={isHost}
+                onEnd={handleEndVote}
+                voteResult={voteResult}
+                onClear={handleClearVoteResult}
+              />
+            ) : (
+              <OutingLounge
+                socket={socket}
+                roomId={id}
+                isHost={isHost}
+                onPropose={handlePropose}
+              />
+            )
+          )}
+          {activity !== 'none' && activity !== 'game' && activity !== 'watch' && activity !== 'study' && activity !== 'outing' && (
+            <ComingSoon activity={activity} />
+          )}
         </div>
 
         {/* Chat panel */}
