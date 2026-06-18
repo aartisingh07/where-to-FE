@@ -1,23 +1,40 @@
+import { useState } from 'react';
 import { FiStar, FiTv, FiFilm, FiPlay } from 'react-icons/fi';
 
 const MovieCard = ({ movie, onPropose }) => {
   const ratingStars = Math.round(movie.rating / 2);
+  const [imageError, setImageError] = useState(false);
 
   return (
     <div className="glass-card overflow-hidden group hover:border-white/20 transition-all duration-300 flex flex-col sm:flex-row h-auto sm:h-52">
       {/* Poster */}
-      <div className="w-full sm:w-36 h-52 sm:h-full flex-shrink-0 relative overflow-hidden">
-        <img
-          src={movie.poster}
-          alt={movie.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
-        {/* Rating overlay for mobile */}
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10 flex items-center gap-1">
-          <FiStar className="text-amber-400 fill-amber-400" size={10} />
-          <span className="text-[10px] font-bold text-white">{movie.rating}</span>
-        </div>
+      <div className="w-full sm:w-36 h-52 sm:h-full flex-shrink-0 relative overflow-hidden bg-dark-900 border-r border-white/5 flex items-center justify-center">
+        {imageError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-dark-900/60 p-3 text-center relative">
+            <span className="text-3xl mb-2">🎬</span>
+            <span className="text-[10px] text-white/50 font-semibold leading-tight line-clamp-3 select-none">{movie.title}</span>
+            {/* Rating overlay */}
+            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10 flex items-center gap-1">
+              <FiStar className="text-amber-400 fill-amber-400" size={10} />
+              <span className="text-[10px] font-bold text-white">{movie.rating}</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <img
+              src={movie.poster}
+              alt=""
+              onError={() => setImageError(true)}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+            />
+            {/* Rating overlay */}
+            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10 flex items-center gap-1">
+              <FiStar className="text-amber-400 fill-amber-400" size={10} />
+              <span className="text-[10px] font-bold text-white">{movie.rating}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Info Content */}
