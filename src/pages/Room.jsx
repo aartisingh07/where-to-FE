@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiSend, FiLogOut, FiHash, FiUsers, FiMessageCircle, FiExternalLink, FiClock } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -88,7 +88,7 @@ const Room = () => {
 
   const isHost = room?.host?._id === user?._id || room?.host === user?._id;
 
-  const fetchRoomPlan = async () => {
+  const fetchRoomPlan = useCallback(async () => {
     if (!id) return;
     try {
       const plan = await outingPlanService.getPlanForRoom(id);
@@ -96,12 +96,12 @@ const Room = () => {
     } catch (err) {
       console.error('Failed to fetch room plan:', err);
     }
-  };
+  }, [id]);
 
-  const handlePlanScheduled = async () => {
+  const handlePlanScheduled = useCallback(async () => {
     await fetchRoomPlan();
     socket?.emit('plan-scheduled', { roomId: id });
-  };
+  }, [fetchRoomPlan, socket, id]);
 
   useEffect(() => {
     fetchRoomPlan();
