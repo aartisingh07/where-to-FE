@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FiClock, FiThumbsUp, FiThumbsDown, FiHelpCircle, FiExternalLink, FiArrowLeft, FiAward } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import { movieService } from '../../services/movieService';
+import { outingPlanService } from '../../services/outingPlanService';
 
 const GameVoting = ({
   activeVote,
@@ -11,10 +13,43 @@ const GameVoting = ({
   onEnd,
   voteResult = null,
   onClear,
+  roomId = null,
 }) => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [providers, setProviders] = useState([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
+
+  // Scheduling states
+  const [dateTime, setDateTime] = useState('');
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [schedulingLoading, setSchedulingLoading] = useState(false);
+
+  const item = voteResult?.item || activeVote?.item;
+
+  const handleSchedulePlan = async () => {
+    if (!dateTime || !roomId) return;
+    setSchedulingLoading(true);
+    try {
+      const plan = await outingPlanService.createPlan({
+        roomId,
+        placeName: item?.name || item?.title,
+        address: item?.desc || '',
+        lat: item?.lat || 0,
+        lng: item?.lng || 0,
+        mapsLink: item?.link || '',
+        dateTime: new Date(dateTime).toISOString()
+      });
+      setIsScheduled(true);
+      setScheduledTime(plan.dateTime);
+      toast.success('Hangout plan locked and scheduled! 📅');
+    } catch (err) {
+      console.error('Failed to schedule plan:', err);
+      toast.error(err.response?.data?.message || 'Could not schedule hangout plan');
+    } finally {
+      setSchedulingLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (voteResult && voteResult.result === 'approved' && voteResult.item?.type === 'movie') {
@@ -150,6 +185,45 @@ const GameVoting = ({
                 <span className="text-white/30 text-xs">Maybe</span>
               </div>
             </div>
+
+            {/* Outing Scheduling Block */}
+            {item.type === 'outing' && (
+              <div className="mb-6 bg-dark-800/40 rounded-xl p-4 border border-white/5 text-left">
+                <p className="text-white/40 text-xs font-semibold mb-3">📅 Meetup Scheduling</p>
+                {isScheduled ? (
+                  <div className="text-center py-2">
+                    <span className="text-neon-green font-bold text-sm block">✓ Locked & Confirmed</span>
+                    <span className="text-white/80 text-xs mt-1 block font-mono">
+                      {new Date(scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
+                  </div>
+                ) : isHost ? (
+                  <div className="space-y-3">
+                    <label className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Select Date & Time</label>
+                    <input
+                      type="datetime-local"
+                      value={dateTime}
+                      onChange={(e) => setDateTime(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-neon-green/40 focus:bg-white/8 transition-all"
+                      required
+                    />
+                    <button
+                      onClick={handleSchedulePlan}
+                      disabled={schedulingLoading || !dateTime}
+                      className="w-full btn-primary py-2.5 rounded-xl font-semibold bg-gradient-to-r from-neon-green to-emerald-500 hover:from-neon-green hover:to-emerald-600 hover:shadow-glow-green text-white transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                    >
+                      {schedulingLoading ? (
+                        <div className="w-4.5 h-4.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : 'Confirm & Lock Plan'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-3 italic text-white/40 text-xs">
+                    ⏳ Waiting for the host to schedule the date & time...
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-col gap-3">
               {item.type !== 'activity' && (

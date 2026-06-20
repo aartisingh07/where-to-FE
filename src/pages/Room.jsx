@@ -399,6 +399,7 @@ const Room = () => {
                 onEnd={handleEndVote}
                 voteResult={voteResult}
                 onClear={handleClearVoteResult}
+                roomId={id}
               />
             ) : (
               <OutingLounge

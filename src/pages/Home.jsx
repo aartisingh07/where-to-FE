@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   FiArrowRight, FiMapPin, FiUsers, FiZap, FiHeart,
-  FiCompass, FiHash, FiUser, FiSunrise,
+  FiCompass, FiHash, FiUser, FiSunrise, FiExternalLink, FiClock
 } from 'react-icons/fi';
+import { outingPlanService } from '../services/outingPlanService';
 
 // ─── Logged-OUT landing page ────────────────────────────────────
 const GuestHome = () => {
@@ -177,6 +179,40 @@ const UserHome = ({ user }) => {
     hour < 17 ? 'Good afternoon' :
     'Good evening';
 
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await outingPlanService.getMyPlans();
+        setPlans(data);
+      } catch (err) {
+        console.error('Failed to fetch scheduled outings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  const getCountdownString = (dateTimeString) => {
+    const diff = new Date(dateTimeString) - new Date();
+    if (diff <= 0) return 'Happening now!';
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return `Starts in ${days} day${days > 1 ? 's' : ''} ${hours % 24} hour${hours % 24 !== 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+      return `Starts in ${hours} hour${hours > 1 ? 's' : ''} ${minutes % 60} minute${minutes % 60 !== 1 ? 's' : ''}`;
+    } else {
+      return `Starts in ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+  };
+
   const quickActions = [
     {
       emoji: '📍',
@@ -266,6 +302,73 @@ const UserHome = ({ user }) => {
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Scheduled Outings */}
+      <section className="py-6 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-display font-bold text-lg text-white mb-4 flex items-center gap-2">
+            <span>📅</span> Upcoming Outings
+          </h2>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-2 border-white/20 border-t-primary-500 rounded-full animate-spin" />
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="glass-card p-6 text-center text-white/30 text-sm">
+              No scheduled outings yet. Propose one in an outing lounge!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {plans.map((plan) => (
+                <div key={plan._id} className="glass-card p-5 border-neon-green/10 hover:border-neon-green/30 shadow-glow-green-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+                  <div>
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-neon-green">
+                        Confirmed Outing
+                      </span>
+                      <div className="flex items-center gap-1 text-[10px] text-white/40 font-medium">
+                        <FiClock size={11} className="text-neon-green animate-pulse" />
+                        <span>{getCountdownString(plan.dateTime)}</span>
+                      </div>
+                    </div>
+
+                    <h3 className="font-display font-bold text-white text-base mb-1 truncate">
+                      {plan.placeName}
+                    </h3>
+                    {plan.address && (
+                      <p className="text-white/40 text-xs line-clamp-2 mb-3 leading-relaxed">
+                        📍 {plan.address}
+                      </p>
+                    )}
+                    <p className="text-white/60 text-xs font-medium mb-4 flex items-center gap-1.5">
+                      <span>⏰</span>
+                      {new Date(plan.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
+                    <span className="text-[10px] text-white/30">
+                      Room: <span className="font-semibold text-white/50">{plan.roomName || 'Hangout'}</span>
+                    </span>
+                    {plan.mapsLink && (
+                      <a
+                        href={plan.mapsLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-neon-green hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        Get Directions
+                        <FiExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
