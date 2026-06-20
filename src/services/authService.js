@@ -15,4 +15,10 @@ export const authService = {
     const response = await api.get('/auth/me');
     return response.data;
   },
+
+  deleteAccount: async () => {
+    const response = await api.delete('/user');
+    return response.data;
+  },
 };
+

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { placeService } from '../services/placeService';
+import { authService } from '../services/authService';
 import { FiUser, FiCalendar, FiMapPin, FiLogOut, FiTrash2, FiNavigation } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
@@ -10,6 +11,25 @@ const Profile = () => {
   const navigate = useNavigate();
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [loadingPlaces, setLoadingPlaces] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    try {
+      setDeleting(true);
+      await authService.deleteAccount();
+      toast.success('Account successfully deleted');
+      logout();
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete account. Please try again.');
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchPlaces = async () => {
@@ -138,17 +158,55 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Logout */}
-        <div className="mt-6 text-center">
+        {/* Actions (Logout & Delete Account) */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={handleLogout}
-            className="inline-flex items-center gap-2 text-white/30 hover:text-red-400 px-4 py-2 rounded-lg hover:bg-red-500/10 transition-all text-sm"
+            className="inline-flex items-center justify-center gap-2 text-white/40 hover:text-white px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-sm font-medium w-full sm:w-auto"
           >
             <FiLogOut size={16} />
             Log out
           </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="inline-flex items-center justify-center gap-2 text-red-400 hover:text-red-300 px-5 py-2.5 rounded-xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 transition-all text-sm font-medium w-full sm:w-auto"
+          >
+            <FiTrash2 size={16} />
+            Delete Account
+          </button>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-sm animate-fade-in animate-duration-200">
+          <div className="glass-card border-red-500/20 shadow-glow-red/5 p-6 max-w-md w-full animate-scale-up animate-duration-200">
+            <h3 className="font-display font-bold text-white text-lg mb-2 flex items-center gap-2">
+              <span className="text-red-500">⚠️</span> Permanent Account Deletion
+            </h3>
+            <p className="text-white/60 text-sm mb-6 leading-relaxed">
+              Are you absolutely sure you want to delete your account? This action is **irreversible** and will permanently delete all your user profile data, saved places, chat messages, active outing meetups, and notifications.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white/80 rounded-xl text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete My Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
