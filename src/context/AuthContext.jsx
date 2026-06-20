@@ -13,7 +13,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('whereto_token'));
+  const [token, setToken] = useState(sessionStorage.getItem('whereto_token'));
   const [loading, setLoading] = useState(true);
 
   // Load user from token on mount
@@ -26,8 +26,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           console.error('Failed to load user:', error);
           // Token is invalid — clear it
-          localStorage.removeItem('whereto_token');
-          localStorage.removeItem('whereto_user');
+          sessionStorage.removeItem('whereto_token');
+          sessionStorage.removeItem('whereto_user');
           setToken(null);
           setUser(null);
         }
@@ -40,8 +40,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const data = await authService.login(credentials);
-    localStorage.setItem('whereto_token', data.token);
-    localStorage.setItem('whereto_user', JSON.stringify(data));
+    sessionStorage.setItem('whereto_token', data.token);
+    sessionStorage.setItem('whereto_user', JSON.stringify(data));
     setToken(data.token);
     setUser(data);
     return data;
@@ -49,16 +49,16 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const data = await authService.register(userData);
-    localStorage.setItem('whereto_token', data.token);
-    localStorage.setItem('whereto_user', JSON.stringify(data));
+    sessionStorage.setItem('whereto_token', data.token);
+    sessionStorage.setItem('whereto_user', JSON.stringify(data));
     setToken(data.token);
     setUser(data);
     return data;
   };
 
   const logout = () => {
-    localStorage.removeItem('whereto_token');
-    localStorage.removeItem('whereto_user');
+    sessionStorage.removeItem('whereto_token');
+    sessionStorage.removeItem('whereto_user');
     setToken(null);
     setUser(null);
   };
