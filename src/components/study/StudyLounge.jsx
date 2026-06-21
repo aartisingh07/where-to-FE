@@ -1,6 +1,5 @@
 import PomodoroTimer from './PomodoroTimer';
 import TodoList from './TodoList';
-import MusicPlayer from '../music/MusicPlayer';
 
 const StudyLounge = ({ socket, roomId, isHost }) => {
   return (
@@ -19,11 +18,6 @@ const StudyLounge = ({ socket, roomId, isHost }) => {
         <div className="flex-1 flex justify-center w-full">
           <TodoList />
         </div>
-      </div>
-
-      {/* Sync Lofi Music Player */}
-      <div className="mt-10 flex justify-center w-full pb-10">
-        <MusicPlayer socket={socket} roomId={roomId} isHost={isHost} />
       </div>
     </div>
   );

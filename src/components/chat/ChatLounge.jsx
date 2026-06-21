@@ -1,5 +1,4 @@
 import { FiUsers } from 'react-icons/fi';
-import MusicPlayer from '../music/MusicPlayer';
 
 const ChatLounge = ({ socket, roomId, isHost, onlineUsers = [] }) => {
   return (
@@ -16,12 +15,12 @@ const ChatLounge = ({ socket, roomId, isHost, onlineUsers = [] }) => {
           <span>💬</span> Just Chat
         </h2>
         <p className="text-white/40 text-sm max-w-md mx-auto">
-          Hang out with the squad, chat, and chill to synchronized ambient lofi beats.
+          Hang out with the squad, chat, and chill.
         </p>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-col lg:flex-row gap-10 items-center justify-center w-full relative z-10">
+      <div className="flex justify-center w-full relative z-10">
         
         {/* Presence / Online Members Panel */}
         <div className="glass-card p-6 border-white/5 w-full max-w-xs h-[320px] flex flex-col justify-between">
@@ -55,9 +54,6 @@ const ChatLounge = ({ socket, roomId, isHost, onlineUsers = [] }) => {
             <span className="w-2 h-2 bg-neon-green rounded-full animate-ping" />
           </div>
         </div>
-
-        {/* Music Player */}
-        <MusicPlayer socket={socket} roomId={roomId} isHost={isHost} />
         
       </div>
     </div>
@@ -65,3 +61,4 @@ const ChatLounge = ({ socket, roomId, isHost, onlineUsers = [] }) => {
 };
 
 export default ChatLounge;
+
