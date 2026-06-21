@@ -7,7 +7,7 @@
 ## ✨ Features
 
 - 🔐 **JWT Auth integration** — Secure logins and signups with token persistence in localStorage and React Router route guards (Protected vs Guest routes).
-- 🧭 **Explore Mode (Solo Place Finder)** — Browser geolocation capturing, mood filter selectors, radius indicator sliders, place card grids, and Google Maps direction integrations.
+- 🧭 **Explore Mode (Solo Place Finder)** — Browser geolocation capturing, mood filter selectors, radius indicator sliders, debounced location search autocomplete suggestions dropdown, visual category gradients for placeholder photos, and Google Maps direction integrations.
 - 👤 **Saved Places Collection** — Profile page displaying personal user details and a list of saved venues with links and removal buttons.
 - 🏠 **Lobby Join & Create** — Lobbies created with name inputs and copy-to-clipboard buttons, alongside OTP-styled 6-character room code entry boxes.
 - 💬 **Socket Chat & Presence** — Sidebar tracking active room members, host tags, online indicators, and group text chat with system join/leave notices.
