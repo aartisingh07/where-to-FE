@@ -57,6 +57,8 @@ const Explore = () => {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [locationQuery, setLocationQuery] = useState('');
+  const [resolvedLocationText, setResolvedLocationText] = useState('');
   const [subFilters, setSubFilters] = useState({
     diet: 'any',
     foodType: 'any',
@@ -91,26 +93,34 @@ const Explore = () => {
 
   // Automatically fetch places when Step 3 is reached and location is acquired
   useEffect(() => {
-    if (step === 3 && location.lat && location.lng && distance) {
+    if (step === 3 && location.lat && location.lng && distance && !locationQuery) {
       fetchPlaces(location.lat, location.lng);
     }
   }, [step, location.lat, location.lng, distance, mood, subFilters]);
 
   // Watch for location being fetched then call API
-  const fetchPlaces = async (lat, lng) => {
+  const fetchPlaces = async (lat, lng, searchQuery = '') => {
     setLoading(true);
     setError(null);
     try {
       const data = await placeService.getNearbyPlaces({
         lat,
         lng,
+        locationQuery: searchQuery,
         mood,
         distance,
         subFilters,
       });
       setPlaces(data.places);
+      
+      if (data.resolvedLocation) {
+        setResolvedLocationText(data.resolvedLocation.address);
+      } else {
+        setResolvedLocationText('');
+      }
+
       if (data.places.length === 0) {
-        setError('No places found nearby. Try a different mood or larger distance!');
+        setError('No places found. Try a different mood, larger distance, or search query!');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch places. Try again.');
@@ -149,6 +159,12 @@ const Explore = () => {
     );
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!locationQuery.trim()) return;
+    fetchPlaces(null, null, locationQuery);
+  };
+
   const handleReset = () => {
     setStep(1);
     setMood(null);
@@ -160,6 +176,8 @@ const Explore = () => {
       adventureType: 'any'
     });
     setPlaces([]);
+    setLocationQuery('');
+    setResolvedLocationText('');
     setError(null);
     setLoading(false);
   };
@@ -406,11 +424,17 @@ const Explore = () => {
         {step === 3 && (
           <div className="animate-fade-in">
             {/* Summary bar */}
-            <div className="glass-card p-4 flex flex-wrap items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3 text-sm text-white/60">
+            <div className="glass-card p-4 flex flex-col md:flex-row items-center justify-between gap-4 mb-6 animate-slide-up">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-white/60">
                 <span>{selectedMood?.emoji} <span className="text-white font-medium">{selectedMood?.label}</span></span>
                 <span className="text-white/20">·</span>
                 <span>{selectedDist?.emoji} <span className="text-white font-medium">{selectedDist?.label}</span></span>
+                {resolvedLocationText && (
+                  <>
+                    <span className="text-white/20">·</span>
+                    <span className="text-white font-medium">📍 {resolvedLocationText}</span>
+                  </>
+                )}
                 {places.length > 0 && (
                   <>
                     <span className="text-white/20">·</span>
@@ -418,35 +442,71 @@ const Explore = () => {
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                {!loading && places.length === 0 && !error && (
-                  <button onClick={handleFetch} className="btn-primary text-sm !px-4 !py-2 flex items-center gap-2">
-                    <FiNavigation size={14} />
-                    Find Places
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <form onSubmit={handleSearchSubmit} className="flex gap-2 w-full md:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Search new location..."
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-white text-xs placeholder-white/20 focus:outline-none focus:border-primary-500/40 focus:bg-white/8 transition-all flex-1 md:w-40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!locationQuery.trim()}
+                    className="bg-primary-500/20 border border-primary-500/25 hover:bg-primary-500/35 text-primary-300 font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    Go
                   </button>
-                )}
-                <button onClick={handleReset} className="btn-ghost text-sm flex items-center gap-1.5">
-                  <FiRefreshCw size={14} />
+                </form>
+                <button onClick={handleReset} className="btn-ghost text-xs flex items-center gap-1.5 !px-3 !py-2">
+                  <FiRefreshCw size={12} />
                   Start over
                 </button>
               </div>
             </div>
 
-            {/* Auto-fetch trigger */}
+            {/* Auto-fetch or search query trigger */}
             {!loading && places.length === 0 && !error && (
-              <div className="text-center py-12 animate-slide-up">
+              <div className="glass-card max-w-md mx-auto p-8 text-center animate-slide-up">
                 <div className="text-5xl mb-4">📍</div>
-                <p className="text-white/50 mb-6">Ready to find spots near you?</p>
-                <button
-                  onClick={handleFetch}
-                  className="btn-primary flex items-center gap-2 mx-auto"
-                >
-                  <FiNavigation size={16} />
-                  Allow Location & Find Places
-                </button>
-                <p className="text-white/20 text-xs mt-3">
-                  We only use your location to find nearby places. We don't store it.
+                <h3 className="font-display font-bold text-white text-lg mb-2">Find Places</h3>
+                <p className="text-white/40 text-xs mb-6">
+                  Allow location access or search for any location (city, area, state) below.
                 </p>
+                
+                <div className="space-y-4">
+                  <button
+                    onClick={handleFetch}
+                    className="btn-primary flex items-center justify-center gap-2 w-full"
+                  >
+                    <FiNavigation size={16} />
+                    Use My Current Location
+                  </button>
+
+                  <div className="flex items-center justify-center gap-3 py-1">
+                    <div className="h-px bg-white/10 flex-1" />
+                    <span className="text-[10px] text-white/30 uppercase font-bold tracking-wider">or search place</span>
+                    <div className="h-px bg-white/10 flex-1" />
+                  </div>
+
+                  <form onSubmit={handleSearchSubmit} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Dadar, Gujarat, Thane"
+                      value={locationQuery}
+                      onChange={(e) => setLocationQuery(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-primary-500/40 focus:bg-white/8 transition-all"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!locationQuery.trim()}
+                      className="btn-secondary !px-4 !py-2 text-sm disabled:opacity-50"
+                    >
+                      Search
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
 

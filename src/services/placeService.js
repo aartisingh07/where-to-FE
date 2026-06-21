@@ -1,8 +1,8 @@
 import api from './api';
 
 export const placeService = {
-  getNearbyPlaces: async ({ lat, lng, mood, distance }) => {
-    const response = await api.post('/places/nearby', { lat, lng, mood, distance });
+  getNearbyPlaces: async (params) => {
+    const response = await api.post('/places/nearby', params);
     return response.data;
   },
 
