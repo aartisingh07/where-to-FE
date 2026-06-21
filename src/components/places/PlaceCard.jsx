@@ -108,13 +108,21 @@ const PlaceCard = ({ place, onSave, isSaved = false }) => {
         className="glass-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover group cursor-pointer flex flex-col justify-between"
       >
         {/* illustrative header image */}
-        <div className="h-28 w-full overflow-hidden relative">
-          <img
-            src={place.photo || defaultPhoto}
-            alt={place.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent" />
+        <div className={`h-28 w-full overflow-hidden relative ${!place.photo ? `bg-gradient-to-br ${style.color} flex items-center justify-center` : ''}`}>
+          {place.photo ? (
+            <>
+              <img
+                src={place.photo}
+                alt={place.name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent" />
+            </>
+          ) : (
+            <div className="text-4xl select-none opacity-40 group-hover:scale-110 transition-transform duration-300 mt-2">
+              {style.emoji}
+            </div>
+          )}
           <span className={`absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10 ${style.badge}`}>
             {style.emoji} {place.category}
           </span>
@@ -178,13 +186,21 @@ const PlaceCard = ({ place, onSave, isSaved = false }) => {
             </button>
 
             {/* Poster Header */}
-            <div className="h-48 w-full relative">
-              <img
-                src={place.photo || defaultPhoto}
-                alt={place.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent" />
+            <div className={`h-48 w-full relative ${!place.photo ? `bg-gradient-to-br ${style.color} flex items-center justify-center` : ''}`}>
+              {place.photo ? (
+                <>
+                  <img
+                    src={place.photo}
+                    alt={place.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent" />
+                </>
+              ) : (
+                <div className="text-6xl select-none opacity-40 mb-8">
+                  {style.emoji}
+                </div>
+              )}
               <div className="absolute bottom-4 left-4">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full border border-white/15 ${style.badge}`}>
                   {style.emoji} {place.category}
