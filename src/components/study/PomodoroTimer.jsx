@@ -8,7 +8,17 @@ const PomodoroTimer = ({ socket, roomId }) => {
     duration: 1500,
     isRunning: false,
     mode: 'work',
+    workDuration: 1500,
+    breakDuration: 300,
   });
+
+  const handleSetDuration = (workMin, breakMin) => {
+    socket?.emit('set-timer-duration', {
+      roomId,
+      workDuration: workMin,
+      breakDuration: breakMin,
+    });
+  };
 
   useEffect(() => {
     if (!socket || !roomId) return;
@@ -52,7 +62,7 @@ const PomodoroTimer = ({ socket, roomId }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const { timeLeft, duration, isRunning, mode } = timerState;
+  const { timeLeft, duration, isRunning, mode, workDuration, breakDuration } = timerState;
 
   // Calculate SVG stroke offset
   const radius = 90;
@@ -149,6 +159,38 @@ const PomodoroTimer = ({ socket, roomId }) => {
             <FiPause size={20} />
           </button>
         )}
+      </div>
+      {/* Custom Duration Configuration */}
+      <div className="mt-8 pt-4 border-t border-white/5 flex gap-4 w-full justify-center relative z-10">
+        <div className="flex flex-col items-start gap-1">
+          <label className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Work Session</label>
+          <select
+            value={Math.round((workDuration || 1500) / 60)}
+            onChange={(e) => handleSetDuration(parseInt(e.target.value), Math.round((breakDuration || 300) / 60))}
+            className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-xs outline-none focus:border-primary-500/40 focus:bg-dark-800 transition-all cursor-pointer"
+          >
+            <option value="5" className="bg-dark-800 text-white">5 mins</option>
+            <option value="10" className="bg-dark-800 text-white">10 mins</option>
+            <option value="15" className="bg-dark-800 text-white">15 mins</option>
+            <option value="25" className="bg-dark-800 text-white">25 mins</option>
+            <option value="40" className="bg-dark-800 text-white">40 mins</option>
+            <option value="60" className="bg-dark-800 text-white">60 mins</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col items-start gap-1">
+          <label className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Break Session</label>
+          <select
+            value={Math.round((breakDuration || 300) / 60)}
+            onChange={(e) => handleSetDuration(Math.round((workDuration || 1500) / 60), parseInt(e.target.value))}
+            className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-xs outline-none focus:border-primary-500/40 focus:bg-dark-800 transition-all cursor-pointer"
+          >
+            <option value="3" className="bg-dark-800 text-white">3 mins</option>
+            <option value="5" className="bg-dark-800 text-white">5 mins</option>
+            <option value="10" className="bg-dark-800 text-white">10 mins</option>
+            <option value="15" className="bg-dark-800 text-white">15 mins</option>
+          </select>
+        </div>
       </div>
     </div>
   );
