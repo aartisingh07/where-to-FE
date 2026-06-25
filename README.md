@@ -15,6 +15,7 @@
 - 🎬 **Watch Lounge (TMDB & Streaming providers)** — Filter filters (moods, genres, languages), movie list summaries, movie proposals, and custom victory cards calling API to display logo shortcuts of streaming providers (Netflix, Prime Video, Disney+).
 - 📚 **Study Lounge (Pomodoro & Tasks)** — Synced circular SVG countdown timers for Work/Break phases, alongside personal local Todo checklists.
 - 📍 **Outing Lounge (midpoint planning)** — Geolocation submissions, submission status rosters, midpoint centroid search aggregations, and results place voting.
+- 💬 **Private Direct Messaging (DM)** — Search for usernames (preventing self-search), send chat requests, approve pending incoming requests, and chat in real-time. Displays a pulsing red notification dot in the Navbar, an Unread Messages Banner on the Home dashboard, real-time DM toaster alerts, and automatic read tracking/synchronization.
 
 ---
 
@@ -59,12 +60,14 @@ frontend/
 │   │   ├── CreateRoom.jsx    # Room creator & code copy
 │   │   ├── JoinRoom.jsx      # OTP room code input
 │   │   ├── Profile.jsx       # User details & favorites list
-│   │   └── Room.jsx          # Synced collaborative room panels
+│   │   ├── Room.jsx          # Synced collaborative room panels
+│   │   └── DirectMessages.jsx # Unified DM sidebar search & chat workspace
 │   ├── services/
 │   │   ├── api.js            # Axios request configurations
 │   │   ├── authService.js    # Register/Login requests
 │   │   ├── placeService.js   # Save/Load place requests
-│   │   └── roomService.js    # Create/Join/Get room endpoints
+│   │   ├── roomService.js    # Create/Join/Get room endpoints
+│   │   └── chatService.js    # Search, request actions, and DM requests
 │   ├── App.jsx               # Protected/Guest Route routing wraps
 │   ├── main.jsx              # React mounting root
 │   └── index.css             # Component style layers & animations
