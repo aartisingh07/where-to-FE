@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { notificationService } from '../../services/notificationService';
+import { chatService } from '../../services/chatService';
 import { toast } from 'react-toastify';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLogOut, FiUser, FiCompass, FiUsers, FiBell, FiCheck } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiCompass, FiUsers, FiBell, FiCheck, FiMessageSquare } from 'react-icons/fi';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -16,6 +17,49 @@ const Navbar = () => {
 
   const [notifications, setNotifications] = useState([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadDMsCount, setUnreadDMsCount] = useState(0);
+
+  const fetchUnreadDMsCount = useCallback(async () => {
+    if (!isAuthenticated || !user?._id) return;
+    try {
+      const data = await chatService.getUnreadCount();
+      setUnreadDMsCount(data.unreadCount || 0);
+    } catch (err) {
+      console.error('Failed to fetch unread DMs count:', err);
+    }
+  }, [isAuthenticated, user?._id]);
+
+  useEffect(() => {
+    fetchUnreadDMsCount();
+  }, [fetchUnreadDMsCount]);
+
+  useEffect(() => {
+    if (!socket || !user?._id) return;
+
+    const unreadUpdateEvent = `unread-count-updated-${user._id}`;
+    const dmEvent = `direct-message-${user._id}`;
+
+    const handleUnreadUpdate = () => {
+      fetchUnreadDMsCount();
+    };
+
+    const handleNewDM = (msg) => {
+      fetchUnreadDMsCount();
+      
+      // If we are not currently viewing the chats page, show direct toaster alert
+      if (location.pathname !== '/messages') {
+        toast.info(`💬 ${msg.senderUsername || 'Someone'} sent you a message: "${msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content}"`);
+      }
+    };
+
+    socket.on(unreadUpdateEvent, handleUnreadUpdate);
+    socket.on(dmEvent, handleNewDM);
+
+    return () => {
+      socket.off(unreadUpdateEvent, handleUnreadUpdate);
+      socket.off(dmEvent, handleNewDM);
+    };
+  }, [socket, user?._id, location.pathname, fetchUnreadDMsCount]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?._id) {
@@ -86,6 +130,10 @@ const Navbar = () => {
     { path: '/join-room', label: 'Join Room', icon: <FiUsers size={18} /> },
   ];
 
+  if (isAuthenticated) {
+    navLinks.push({ path: '/messages', label: 'Chats', icon: <FiMessageSquare size={18} /> });
+  }
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-dark-900/80 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -104,7 +152,7 @@ const Navbar = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 relative
                   ${isActive(link.path)
                     ? 'bg-primary-500/20 text-primary-300'
                     : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -112,6 +160,9 @@ const Navbar = () => {
               >
                 {link.icon}
                 {link.label}
+                {link.path === '/messages' && unreadDMsCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
               </Link>
             ))}
           </div>
@@ -244,7 +295,7 @@ const Navbar = () => {
                 key={link.path}
                 to={link.path}
                 onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative
                   ${isActive(link.path)
                     ? 'bg-primary-500/20 text-primary-300'
                     : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -252,6 +303,9 @@ const Navbar = () => {
               >
                 {link.icon}
                 {link.label}
+                {link.path === '/messages' && unreadDMsCount > 0 && (
+                  <span className="absolute top-3 right-4 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
               </Link>
             ))}
 
