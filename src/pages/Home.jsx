@@ -6,6 +6,7 @@ import {
   FiCompass, FiHash, FiUser, FiSunrise, FiExternalLink, FiClock
 } from 'react-icons/fi';
 import { outingPlanService } from '../services/outingPlanService';
+import { roomService } from '../services/roomService';
 
 // ─── Logged-OUT landing page ────────────────────────────────────
 const GuestHome = () => {
@@ -180,20 +181,25 @@ const UserHome = ({ user }) => {
     'Good evening';
 
   const [plans, setPlans] = useState([]);
+  const [activeRooms, setActiveRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPlans = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const data = await outingPlanService.getMyPlans();
-        setPlans(data);
+        const [plansData, roomsData] = await Promise.all([
+          outingPlanService.getMyPlans(),
+          roomService.getMyRooms(),
+        ]);
+        setPlans(plansData || []);
+        setActiveRooms(roomsData || []);
       } catch (err) {
-        console.error('Failed to fetch scheduled outings:', err);
+        console.error('Failed to fetch dashboard data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchPlans();
+    fetchDashboardData();
   }, []);
 
   const getCountdownString = (dateTimeString) => {
@@ -304,6 +310,54 @@ const UserHome = ({ user }) => {
           </div>
         </div>
       </section>
+
+      {/* Active Lobbies */}
+      {!loading && activeRooms.length > 0 && (
+        <section className="py-6 px-4 animate-slide-up">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="font-display font-bold text-lg text-white mb-4 flex items-center gap-2">
+              <span>🏠</span> Your Active Lobbies
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {activeRooms.map((room) => (
+                <div key={room._id} className="glass-card p-5 border-primary-500/10 hover:border-primary-500/30 hover:shadow-glow-purple-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+                  <div>
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-primary-400">
+                        Active Room
+                      </span>
+                      <span className="text-[10px] text-white/40 font-medium">
+                        Code: <span className="font-mono text-primary-300 font-bold">{room.code}</span>
+                      </span>
+                    </div>
+
+                    <h3 className="font-display font-bold text-white text-base mb-1 truncate">
+                      {room.name}
+                    </h3>
+                    <p className="text-white/40 text-xs mb-4">
+                      Host: {room.host?.username || 'You'} · {room.members?.length || 1} member{room.members?.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
+                    <span className="text-[10px] text-white/30">
+                      Created: {new Date(room.createdAt).toLocaleDateString()}
+                    </span>
+                    <Link
+                      to={`/room/${room._id}`}
+                      className="text-xs text-primary-400 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      Enter Room
+                      <FiArrowRight size={12} />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Scheduled Outings */}
       <section className="py-6 px-4">

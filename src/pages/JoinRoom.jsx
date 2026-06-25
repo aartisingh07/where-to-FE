@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiHash, FiArrowRight } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -8,7 +8,24 @@ const JoinRoom = () => {
   const navigate = useNavigate();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [activeRooms, setActiveRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
   const inputs = useRef([]);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const rooms = await roomService.getMyRooms();
+        setActiveRooms(rooms || []);
+      } catch (err) {
+        console.error('Failed to fetch user rooms:', err);
+      } finally {
+        setLoadingRooms(false);
+      }
+    };
+    fetchRooms();
+  }, []);
+
 
   const handleChange = (index, value) => {
     const v = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -115,6 +132,40 @@ const JoinRoom = () => {
           <p className="text-white/20 text-xs mt-4">
             The code is 6 characters — letters and numbers only
           </p>
+
+          {/* Recent active rooms section */}
+          {!loadingRooms && activeRooms.length > 0 && (
+            <div className="mt-10 border-t border-white/5 pt-8 text-left animate-slide-up">
+              <h3 className="font-display font-semibold text-white/50 text-xs uppercase tracking-wider mb-4 pl-1 flex items-center gap-1.5">
+                <span>🏠</span> Recent active lobbies
+              </h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                {activeRooms.map((room) => {
+                  const isHost = room.host?._id === room.members.find(m => m === room.host?._id) || false; // wait, simple host tag check is fine
+                  return (
+                    <button
+                      key={room._id}
+                      onClick={() => navigate(`/room/${room._id}`)}
+                      className="w-full text-left bg-white/3 border border-white/5 p-4 rounded-xl hover:border-primary-500/30 hover:bg-white/5 transition-all duration-300 flex items-center justify-between group cursor-pointer"
+                    >
+                      <div className="min-w-0 pr-3">
+                        <p className="font-display font-semibold text-white text-sm truncate">
+                          {room.name}
+                        </p>
+                        <p className="text-white/30 text-xs mt-1 truncate">
+                          Code: <span className="font-mono text-primary-300 font-bold">{room.code}</span> · Host: {room.host?.username || 'You'}
+                        </p>
+                      </div>
+                      <FiArrowRight
+                        className="text-white/20 group-hover:text-primary-300 group-hover:translate-x-1 transition-all flex-shrink-0"
+                        size={16}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

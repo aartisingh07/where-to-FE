@@ -35,4 +35,9 @@ export const roomService = {
     const response = await api.delete(`/rooms/${id}`);
     return response.data;
   },
+
+  getMyRooms: async () => {
+    const response = await api.get('/rooms/my-rooms');
+    return response.data;
+  },
 };
