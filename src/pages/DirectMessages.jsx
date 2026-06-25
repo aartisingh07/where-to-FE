@@ -17,6 +17,12 @@ const DirectMessages = () => {
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
   const messagesEndRef = useRef(null);
 
   const fetchChatsAndRequests = useCallback(async () => {
@@ -46,6 +52,60 @@ const DirectMessages = () => {
       setLoadingMessages(false);
     }
   }, []);
+
+  const handleSearchUser = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setSearchError('');
+    setSearchResult(null);
+    try {
+      const data = await chatService.searchUser(searchQuery);
+      setSearchResult(data);
+    } catch (err) {
+      setSearchError(err.response?.data?.message || 'User not found');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSendChatRequest = async () => {
+    if (!searchResult) return;
+    try {
+      const response = await chatService.sendRequest(searchResult.user._id);
+      setSearchResult((prev) => ({
+        ...prev,
+        relationship: 'pending_sent',
+        requestId: response._id
+      }));
+      setSearchQuery('');
+      toast.success('Chat request sent successfully!');
+    } catch (err) {
+      toast.error('Failed to send chat request');
+    }
+  };
+
+  const handleAcceptSearchRequest = async (requestId) => {
+    try {
+      await chatService.handleRequest(requestId, 'accept');
+      setSearchResult((prev) => ({ ...prev, relationship: 'accepted' }));
+      toast.success('Chat request accepted!');
+      fetchChatsAndRequests();
+    } catch (err) {
+      toast.error('Failed to accept request');
+    }
+  };
+
+  const handleRejectSearchRequest = async (requestId) => {
+    try {
+      await chatService.handleRequest(requestId, 'reject');
+      setSearchResult((prev) => ({ ...prev, relationship: 'none', requestId: null }));
+      toast.info('Chat request ignored');
+      fetchChatsAndRequests();
+    } catch (err) {
+      toast.error('Failed to ignore request');
+    }
+  };
 
   // Fetch lists on mount
   useEffect(() => {
@@ -166,6 +226,101 @@ const DirectMessages = () => {
 
         {/* Sidebar Body */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          
+          {/* User Search Box inside DM Sidebar */}
+          <div className="pb-3 border-b border-white/5 space-y-2">
+            <p className="text-white/30 text-[10px] uppercase tracking-widest font-semibold px-2">
+              Find Users to Chat
+            </p>
+            <form onSubmit={handleSearchUser} className="flex gap-1.5 px-2">
+              <input
+                type="text"
+                placeholder="Search username..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white
+                           placeholder-white/20 focus:outline-none focus:border-primary-500/40
+                           transition-all"
+              />
+              <button
+                type="submit"
+                disabled={searching}
+                className="px-3 py-1.5 rounded-lg bg-primary-500/25 border border-primary-500/25 hover:bg-primary-500/40 text-primary-300 hover:text-white text-xs transition-colors flex-shrink-0 cursor-pointer"
+              >
+                {searching ? '...' : 'Search'}
+              </button>
+            </form>
+
+            {searchResult && (
+              <div className="mx-2 p-2.5 rounded-xl border border-white/5 bg-white/3 flex items-center justify-between gap-2 animate-fade-in">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 p-0.5 flex-shrink-0">
+                    <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
+                      {searchResult.user.avatar ? (
+                        <img src={searchResult.user.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-white text-[10px] font-bold">{searchResult.user.username[0]?.toUpperCase()}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-white text-[11px] truncate leading-tight">{searchResult.user.username}</p>
+                    <p className="text-[9px] text-white/30 truncate leading-none mt-0.5">Found profile</p>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0">
+                  {searchResult.relationship === 'none' && (
+                    <button
+                      onClick={handleSendChatRequest}
+                      className="px-2 py-1 rounded bg-primary-500/20 border border-primary-500/25 hover:bg-primary-500/45 text-primary-300 hover:text-white text-[10px] transition-colors cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  )}
+                  {searchResult.relationship === 'pending_sent' && (
+                    <span className="text-[9px] text-white/40 bg-white/5 border border-white/10 px-1.5 py-1 rounded">
+                      Sent
+                    </span>
+                  )}
+                  {searchResult.relationship === 'pending_received' && (
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={() => handleAcceptSearchRequest(searchResult.requestId)}
+                        className="p-1 rounded bg-neon-green/20 hover:bg-neon-green/30 text-neon-green transition-colors cursor-pointer"
+                        title="Accept"
+                      >
+                        <FiCheck size={11} />
+                      </button>
+                      <button
+                        onClick={() => handleRejectSearchRequest(searchResult.requestId)}
+                        className="p-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors cursor-pointer"
+                        title="Ignore"
+                      >
+                        <FiX size={11} />
+                      </button>
+                    </div>
+                  )}
+                  {searchResult.relationship === 'accepted' && (
+                    <button
+                      onClick={() => {
+                        setActiveChat(searchResult);
+                        setSearchResult(null);
+                        setSearchQuery('');
+                      }}
+                      className="px-2 py-1 rounded bg-neon-green/20 border border-neon-green/25 hover:bg-neon-green/35 text-neon-green text-[10px] font-semibold transition-colors cursor-pointer"
+                    >
+                      Chat
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {searchError && (
+              <p className="text-red-400 text-[10px] mt-1 px-3">{searchError}</p>
+            )}
+          </div>
           
           {/* Incoming Requests Section */}
           {pendingRequests.length > 0 && (
