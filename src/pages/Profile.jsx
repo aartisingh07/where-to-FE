@@ -6,7 +6,8 @@ import { authService } from '../services/authService';
 import { memoryService } from '../services/memoryService';
 import { 
   FiUser, FiCalendar, FiMapPin, FiLogOut, FiTrash2, FiNavigation, 
-  FiCamera, FiGlobe, FiLock, FiUsers, FiImage, FiPlus, FiArrowLeft
+  FiCamera, FiGlobe, FiLock, FiUsers, FiImage, FiPlus, FiArrowLeft,
+  FiRefreshCw
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
@@ -26,6 +27,10 @@ const Profile = () => {
   // Memories State
   const [memories, setMemories] = useState([]);
   const [loadingMemories, setLoadingMemories] = useState(true);
+
+  // Community Feed State
+  const [feed, setFeed] = useState([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
 
   // Upload State
   const [newPhoto, setNewPhoto] = useState(null);
@@ -68,6 +73,19 @@ const Profile = () => {
     }
   }, [profileUser?._id]);
 
+  const fetchFeed = useCallback(async () => {
+    setLoadingFeed(true);
+    try {
+      const data = await memoryService.getFeed();
+      setFeed(data || []);
+    } catch (err) {
+      console.error('Failed to load feed:', err);
+      toast.error('Failed to load community feed');
+    } finally {
+      setLoadingFeed(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchProfileAndPlaces();
@@ -77,6 +95,10 @@ const Profile = () => {
   useEffect(() => {
     fetchMemories();
   }, [fetchMemories]);
+
+  useEffect(() => {
+    fetchFeed();
+  }, [fetchFeed]);
 
   const handleDeleteAccount = async () => {
     try {
@@ -133,6 +155,19 @@ const Profile = () => {
     try {
       const created = await memoryService.uploadMemory(formData);
       setMemories((prev) => [created, ...prev]);
+
+      if (created.visibility === 'public') {
+        const feedItem = {
+          ...created,
+          user: {
+            _id: user._id,
+            username: user.username,
+            avatar: user.avatar
+          }
+        };
+        setFeed((prev) => [feedItem, ...prev]);
+      }
+
       toast.success('Memory uploaded successfully!');
       setNewPhoto(null);
       setCaption('');
@@ -151,6 +186,7 @@ const Profile = () => {
     try {
       await memoryService.deleteMemory(memoryId);
       setMemories((prev) => prev.filter((m) => m._id !== memoryId));
+      setFeed((prev) => prev.filter((m) => m._id !== memoryId));
       toast.success('Memory removed');
     } catch (err) {
       console.error(err);
@@ -303,9 +339,82 @@ const Profile = () => {
 
           </div>
 
-          {/* RIGHT COLUMN: Trip Memories Diary */}
-          <div className="lg:col-span-8">
+          {/* RIGHT COLUMN: Trip Memories Diary & Community Feed */}
+          <div className="lg:col-span-8 space-y-6">
             
+            {/* Global Community Feed (Instagram Style) */}
+            <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: '0.15s' }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display font-semibold text-lg text-white flex items-center gap-2">
+                  <span>📸</span> Community Feed
+                </h2>
+                <button
+                  onClick={fetchFeed}
+                  disabled={loadingFeed}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                  title="Refresh Feed"
+                >
+                  <FiRefreshCw size={14} className={loadingFeed ? 'animate-spin' : ''} />
+                </button>
+              </div>
+
+              {loadingFeed ? (
+                <div className="flex gap-4 overflow-x-auto pb-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="min-w-[280px] w-[280px] h-52 skeleton rounded-2xl animate-pulse" />
+                  ))}
+                </div>
+              ) : feed.length === 0 ? (
+                <div className="text-center py-8 bg-white/3 border border-white/5 rounded-2xl">
+                  <FiImage className="text-white/15 mx-auto mb-2" size={32} />
+                  <p className="text-white/40 text-xs">No community memories posted yet.</p>
+                </div>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-white/10">
+                  {feed.map((post) => (
+                    <div key={post._id} className="min-w-[280px] w-[280px] p-3 rounded-2xl border border-white/5 bg-white/3 flex flex-col justify-between overflow-hidden relative group">
+                      
+                      {/* User Header */}
+                      <div className="flex items-center justify-between mb-2.5 px-1">
+                        <Link to={post.user?._id ? `/profile/${post.user._id}` : '#'} className="flex items-center gap-2 group/user">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 p-0.5 group-hover/user:scale-105 transition-transform duration-200">
+                            <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
+                              {post.user?.avatar ? (
+                                <img src={post.user.avatar} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <FiUser size={12} className="text-white/40" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-[11px] text-white group-hover/user:text-primary-300 transition-colors leading-tight truncate">
+                              {post.user?.username || 'Unknown'}
+                            </p>
+                            <span className="text-[8px] text-white/30 block leading-none font-mono">
+                              {new Date(post.createdAt).toLocaleDateString([], { dateStyle: 'short' })}
+                            </span>
+                          </div>
+                        </Link>
+                      </div>
+
+                      {/* Post Photo */}
+                      <div className="relative aspect-video rounded-xl overflow-hidden bg-dark-950 mb-2 border border-white/5">
+                        <img src={post.imageUrl} alt="" className="w-full h-full object-cover" />
+                      </div>
+
+                      {/* Post Caption */}
+                      <div className="px-1 mt-1">
+                        <p className="text-white/80 text-[10px] leading-relaxed line-clamp-2">
+                          <span className="font-bold text-white mr-1.5">{post.user?.username || 'unknown'}</span>
+                          {post.caption || <span className="text-white/20 italic font-normal">No caption</span>}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Memory Diary Card */}
             <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <h2 className="font-display font-semibold text-lg text-white mb-6 flex items-center gap-2">

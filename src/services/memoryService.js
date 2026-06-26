@@ -15,6 +15,11 @@ export const memoryService = {
     return response.data;
   },
 
+  getFeed: async () => {
+    const response = await api.get('/memories/feed');
+    return response.data;
+  },
+
   deleteMemory: async (memoryId) => {
     const response = await api.delete(`/memories/${memoryId}`);
     return response.data;

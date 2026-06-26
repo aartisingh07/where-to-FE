@@ -6,11 +6,12 @@ import { toast } from 'react-toastify';
 import {
   FiArrowRight, FiMapPin, FiUsers, FiZap, FiHeart,
   FiCompass, FiHash, FiUser, FiSunrise, FiExternalLink, FiClock, FiTrash2, FiCheck, FiX,
-  FiMessageSquare
+  FiMessageSquare, FiImage
 } from 'react-icons/fi';
 import { outingPlanService } from '../services/outingPlanService';
 import { roomService } from '../services/roomService';
 import { chatService } from '../services/chatService';
+import { memoryService } from '../services/memoryService';
 
 // ─── Logged-OUT landing page ────────────────────────────────────
 const GuestHome = () => {
@@ -214,6 +215,10 @@ const UserHome = ({ user }) => {
   // DM State
   const [unreadDMsCount, setUnreadDMsCount] = useState(0);
 
+  // Feed State
+  const [feed, setFeed] = useState([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+
   const { socket } = useSocket();
 
   useEffect(() => {
@@ -231,6 +236,15 @@ const UserHome = ({ user }) => {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
         setLoading(false);
+      }
+
+      try {
+        const feedData = await memoryService.getFeed();
+        setFeed(feedData || []);
+      } catch (err) {
+        console.error('Failed to fetch memories feed:', err);
+      } finally {
+        setLoadingFeed(false);
       }
     };
     fetchDashboardData();
@@ -404,139 +418,205 @@ const UserHome = ({ user }) => {
         </div>
       )}
 
-      {/* Active Lobbies */}
-      {!loading && activeRooms.length > 0 && (
-        <section className="py-6 px-4 animate-slide-up">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="font-display font-bold text-lg text-white mb-4 flex items-center gap-2">
-              <span>🏠</span> Your Active Lobbies
+      {/* TWO-COLUMN LAYOUT BELOW HERO */}
+      <div className="max-w-6xl mx-auto px-4 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* LEFT COLUMN: Community Trip Feed (Like Instagram) */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="glass-card p-6 animate-slide-up">
+            <h2 className="font-display font-bold text-lg text-white mb-6 flex items-center gap-2">
+              <span>📸</span> Community Trip Feed
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {activeRooms.map((room) => (
-                <div key={room._id} className="glass-card p-5 border-primary-500/10 hover:border-primary-500/30 hover:shadow-glow-purple-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
-                  <div>
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-primary-400">
-                        Active Room
-                      </span>
-                      <span className="text-[10px] text-white/40 font-medium">
-                        Code: <span className="font-mono text-primary-300 font-bold">{room.code}</span>
-                      </span>
+
+            {loadingFeed ? (
+              <div className="space-y-6">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-64 skeleton rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : feed.length === 0 ? (
+              <div className="text-center py-12 bg-white/3 border border-white/5 rounded-2xl">
+                <FiImage className="text-white/15 mx-auto mb-3" size={36} />
+                <p className="text-white/40 text-sm">No community memories posted yet.</p>
+                <p className="text-white/20 text-xs mt-1">Go to your Profile to upload your first trip photo memory!</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {feed.map((post) => (
+                  <div key={post._id} className="p-4 rounded-2xl border border-white/5 bg-white/3 flex flex-col justify-between overflow-hidden animate-fade-in">
+                    
+                    {/* User Header */}
+                    <div className="flex items-center justify-between mb-3.5">
+                      <Link to={`/profile/${post.user?._id}`} className="flex items-center gap-2.5 group">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 p-0.5 group-hover:scale-105 transition-transform duration-200">
+                          <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
+                            {post.user?.avatar ? (
+                              <img src={post.user.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <FiUser size={16} className="text-white/40" />
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-xs text-white group-hover:text-primary-300 transition-colors leading-tight">
+                            {post.user?.username || 'Unknown User'}
+                          </p>
+                          <span className="text-[9px] text-white/30 leading-none">
+                            {new Date(post.createdAt).toLocaleDateString([], { dateStyle: 'medium' })}
+                          </span>
+                        </div>
+                      </Link>
                     </div>
 
-                    <h3 className="font-display font-bold text-white text-base mb-1 truncate">
-                      {room.name}
-                    </h3>
-                    <p className="text-white/40 text-xs mb-4">
-                      Host: {room.host?.username || 'You'} · {room.members?.length || 1} member{room.members?.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
-                    <span className="text-[10px] text-white/30">
-                      Created: {new Date(room.createdAt).toLocaleDateString()}
-                    </span>
-                    <Link
-                      to={`/room/${room._id}`}
-                      className="text-xs text-primary-400 hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      Enter Room
-                      <FiArrowRight size={12} />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Scheduled Outings */}
-      <section className="py-6 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="font-display font-bold text-lg text-white mb-4 flex items-center gap-2">
-            <span>📅</span> Upcoming Outings
-          </h2>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-primary-500 rounded-full animate-spin" />
-            </div>
-          ) : plans.length === 0 ? (
-            <div className="glass-card p-6 text-center text-white/30 text-sm">
-              No scheduled outings yet. Propose one in an outing lounge!
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {plans.map((plan) => (
-                <div key={plan._id} className="glass-card p-5 border-neon-green/10 hover:border-neon-green/30 shadow-glow-green-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
-                  <div>
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-neon-green">
-                        Confirmed Outing
-                      </span>
-                      <div className="flex items-center gap-1 text-[10px] text-white/40 font-medium">
-                        <FiClock size={11} className="text-neon-green animate-pulse" />
-                        <span>{getCountdownString(plan.dateTime)}</span>
-                      </div>
+                    {/* Post Photo */}
+                    <div className="relative aspect-video rounded-xl overflow-hidden bg-dark-950 mb-3.5 border border-white/5">
+                      <img src={post.imageUrl} alt="" className="w-full h-full object-cover" />
                     </div>
 
-                    <h3 className="font-display font-bold text-white text-base mb-1 truncate">
-                      {plan.placeName}
-                    </h3>
-                    {plan.address && (
-                      <p className="text-white/40 text-xs line-clamp-2 mb-3 leading-relaxed">
-                        📍 {plan.address}
+                    {/* Post Footer / Caption */}
+                    <div className="px-1.5">
+                      <p className="text-white/80 text-xs leading-relaxed">
+                        <Link to={`/profile/${post.user?._id}`} className="font-bold text-white hover:text-primary-300 transition-colors mr-2">
+                          {post.user?.username || 'unknown'}
+                        </Link>
+                        {post.caption || <span className="text-white/20 italic font-normal">No caption</span>}
                       </p>
-                    )}
-                    <p className="text-white/60 text-xs font-medium mb-4 flex items-center gap-1.5">
-                      <span>⏰</span>
-                      {new Date(plan.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                    </p>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
-                    <div className="flex flex-col text-left">
-                      <span className="text-[10px] text-white/30">
-                        Room: <span className="font-semibold text-white/50">{plan.roomName || 'Hangout'}</span>
-                      </span>
-                      {(plan.creator === user?._id || plan.creator?._id === user?._id) && (
-                        <button
-                          onClick={() => handleCancelPlan(plan._id)}
-                          className="text-[10px] text-red-400 hover:text-red-300 font-semibold transition-colors mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none outline-none"
-                        >
-                          <FiTrash2 size={10} /> Cancel Outing
-                        </button>
-                      )}
                     </div>
-                    {plan.mapsLink && (
-                      <a
-                        href={plan.mapsLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-neon-green hover:underline flex items-center gap-1 font-semibold"
-                      >
-                        Get Directions
-                        <FiExternalLink size={12} />
-                      </a>
-                    )}
+
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Active Lobbies, Scheduled Outings, and Activities */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Active Lobbies */}
+          {!loading && activeRooms.length > 0 && (
+            <div className="glass-card p-5 animate-slide-up">
+              <h2 className="font-display font-bold text-base text-white mb-4 flex items-center gap-2">
+                <span>🏠</span> Your Active Lobbies
+              </h2>
+              <div className="space-y-4">
+                {activeRooms.map((room) => (
+                  <div key={room._id} className="p-4 rounded-xl border border-white/5 bg-white/3 hover:border-primary-500/20 hover:shadow-glow-purple-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-2.5">
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-primary-400">
+                          Active Room
+                        </span>
+                        <span className="text-[10px] text-white/40 font-medium">
+                          Code: <span className="font-mono text-primary-300 font-bold">{room.code}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="font-display font-bold text-white text-sm mb-1 truncate">
+                        {room.name}
+                      </h3>
+                      <p className="text-white/40 text-[10px] mb-3">
+                        Host: {room.host?.username || 'You'} · {room.members?.length || 1} member{room.members?.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2.5 border-t border-white/5 mt-auto">
+                      <span className="text-[9px] text-white/30">
+                        Created: {new Date(room.createdAt).toLocaleDateString()}
+                      </span>
+                      <Link
+                        to={`/room/${room._id}`}
+                        className="text-xs text-primary-400 hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        Enter Room
+                        <FiArrowRight size={12} />
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>
-      </section>
 
+          {/* Scheduled Outings */}
+          <div className="glass-card p-5 animate-slide-up">
+            <h2 className="font-display font-bold text-base text-white mb-4 flex items-center gap-2">
+              <span>📅</span> Upcoming Outings
+            </h2>
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-6 h-6 border-2 border-white/20 border-t-primary-500 rounded-full animate-spin" />
+              </div>
+            ) : plans.length === 0 ? (
+              <p className="text-white/30 text-xs py-4 text-center">
+                No scheduled outings yet. Propose one in an outing lounge!
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {plans.map((plan) => (
+                  <div key={plan._id} className="p-4 rounded-xl border border-white/5 bg-white/3 hover:border-neon-green/30 shadow-glow-green-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-2.5">
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-neon-green">
+                          Confirmed Outing
+                        </span>
+                        <div className="flex items-center gap-1 text-[9px] text-white/40 font-medium">
+                          <FiClock size={10} className="text-neon-green animate-pulse" />
+                          <span>{getCountdownString(plan.dateTime)}</span>
+                        </div>
+                      </div>
 
+                      <h3 className="font-display font-bold text-white text-sm mb-1 truncate">
+                        {plan.placeName}
+                      </h3>
+                      {plan.address && (
+                        <p className="text-white/40 text-[11px] line-clamp-1 mb-2 leading-relaxed">
+                          📍 {plan.address}
+                        </p>
+                      )}
+                      <p className="text-white/60 text-[11px] font-medium mb-3 flex items-center gap-1.5">
+                        <span>⏰</span>
+                        {new Date(plan.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                      </p>
+                    </div>
 
-      {/* Activity strip */}
-      <section className="py-10 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="glass-card p-6">
+                    <div className="flex justify-between items-center pt-2.5 border-t border-white/5 mt-auto">
+                      <div className="flex flex-col text-left">
+                        <span className="text-[9px] text-white/30">
+                          Room: <span className="font-semibold text-white/50">{plan.roomName || 'Hangout'}</span>
+                        </span>
+                        {(plan.creator === user?._id || plan.creator?._id === user?._id) && (
+                          <button
+                            onClick={() => handleCancelPlan(plan._id)}
+                            className="text-[9px] text-red-400 hover:text-red-300 font-semibold transition-colors mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none outline-none"
+                          >
+                            <FiTrash2 size={9} /> Cancel Outing
+                          </button>
+                        )}
+                      </div>
+                      {plan.mapsLink && (
+                        <a
+                          href={plan.mapsLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-neon-green hover:underline flex items-center gap-1 font-semibold"
+                        >
+                          Get Directions
+                          <FiExternalLink size={12} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Activity strip */}
+          <div className="glass-card p-5 animate-slide-up">
             <p className="text-white/30 text-xs uppercase tracking-widest font-semibold mb-4">Today's mood?</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2.5">
               {[
                 { emoji: '😌', label: 'Chill', mood: 'chill' },
                 { emoji: '🍕', label: 'Foodie', mood: 'foodie' },
@@ -548,8 +628,8 @@ const UserHome = ({ user }) => {
                   key={m.mood}
                   to={`/explore`}
                   state={{ mood: m.mood }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 
-                             text-white/60 text-sm hover:bg-primary-500/10 hover:border-primary-500/20 
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 
+                             text-white/60 text-xs hover:bg-primary-500/10 hover:border-primary-500/20 
                              hover:text-primary-300 transition-all duration-200"
                 >
                   <span>{m.emoji}</span>
@@ -559,7 +639,8 @@ const UserHome = ({ user }) => {
             </div>
           </div>
         </div>
-      </section>
+
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-6 px-4 mt-8">
