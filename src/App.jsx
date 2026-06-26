@@ -10,6 +10,7 @@ import CreateRoom from './pages/CreateRoom';
 import JoinRoom from './pages/JoinRoom';
 import Room from './pages/Room';
 import DirectMessages from './pages/DirectMessages';
+import Feed from './pages/Feed';
 
 // Protected Route wrapper — redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -60,6 +61,14 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route
+          path="/feed"
+          element={
+            <ProtectedRoute>
+              <Feed />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/explore" element={<Explore />} />
         <Route
           path="/login"

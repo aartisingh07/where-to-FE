@@ -215,10 +215,6 @@ const UserHome = ({ user }) => {
   // DM State
   const [unreadDMsCount, setUnreadDMsCount] = useState(0);
 
-  // Feed State
-  const [feed, setFeed] = useState([]);
-  const [loadingFeed, setLoadingFeed] = useState(true);
-
   const { socket } = useSocket();
 
   useEffect(() => {
@@ -236,15 +232,6 @@ const UserHome = ({ user }) => {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
         setLoading(false);
-      }
-
-      try {
-        const feedData = await memoryService.getFeed();
-        setFeed(feedData || []);
-      } catch (err) {
-        console.error('Failed to fetch memories feed:', err);
-      } finally {
-        setLoadingFeed(false);
       }
     };
     fetchDashboardData();
@@ -418,126 +405,57 @@ const UserHome = ({ user }) => {
         </div>
       )}
 
-      {/* TWO-COLUMN LAYOUT BELOW HERO */}
-      <div className="max-w-6xl mx-auto px-4 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* HANGOUT DASHBOARD */}
+      <div className="max-w-4xl mx-auto px-4 pb-16 space-y-6">
         
-        {/* LEFT COLUMN: Community Trip Feed (Like Instagram) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="glass-card p-6 animate-slide-up">
-            <h2 className="font-display font-bold text-lg text-white mb-6 flex items-center gap-2">
-              <span>📸</span> Community Trip Feed
+        {/* Active Lobbies */}
+        {!loading && activeRooms.length > 0 && (
+          <div className="glass-card p-5 animate-slide-up">
+            <h2 className="font-display font-bold text-base text-white mb-4 flex items-center gap-2">
+              <span>🏠</span> Your Active Lobbies
             </h2>
-
-            {loadingFeed ? (
-              <div className="space-y-6">
-                {[1, 2].map((i) => (
-                  <div key={i} className="h-64 skeleton rounded-2xl animate-pulse" />
-                ))}
-              </div>
-            ) : feed.length === 0 ? (
-              <div className="text-center py-12 bg-white/3 border border-white/5 rounded-2xl">
-                <FiImage className="text-white/15 mx-auto mb-3" size={36} />
-                <p className="text-white/40 text-sm">No community memories posted yet.</p>
-                <p className="text-white/20 text-xs mt-1">Go to your Profile to upload your first trip photo memory!</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {feed.map((post) => (
-                  <div key={post._id} className="p-4 rounded-2xl border border-white/5 bg-white/3 flex flex-col justify-between overflow-hidden animate-fade-in">
-                    
-                    {/* User Header */}
-                    <div className="flex items-center justify-between mb-3.5">
-                      <Link to={`/profile/${post.user?._id}`} className="flex items-center gap-2.5 group">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 p-0.5 group-hover:scale-105 transition-transform duration-200">
-                          <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
-                            {post.user?.avatar ? (
-                              <img src={post.user.avatar} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <FiUser size={16} className="text-white/40" />
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-semibold text-xs text-white group-hover:text-primary-300 transition-colors leading-tight">
-                            {post.user?.username || 'Unknown User'}
-                          </p>
-                          <span className="text-[9px] text-white/30 leading-none">
-                            {new Date(post.createdAt).toLocaleDateString([], { dateStyle: 'medium' })}
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-
-                    {/* Post Photo */}
-                    <div className="relative aspect-video rounded-xl overflow-hidden bg-dark-950 mb-3.5 border border-white/5">
-                      <img src={post.imageUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
-
-                    {/* Post Footer / Caption */}
-                    <div className="px-1.5">
-                      <p className="text-white/80 text-xs leading-relaxed">
-                        <Link to={`/profile/${post.user?._id}`} className="font-bold text-white hover:text-primary-300 transition-colors mr-2">
-                          {post.user?.username || 'unknown'}
-                        </Link>
-                        {post.caption || <span className="text-white/20 italic font-normal">No caption</span>}
-                      </p>
-                    </div>
-
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Active Lobbies, Scheduled Outings, and Activities */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Active Lobbies */}
-          {!loading && activeRooms.length > 0 && (
-            <div className="glass-card p-5 animate-slide-up">
-              <h2 className="font-display font-bold text-base text-white mb-4 flex items-center gap-2">
-                <span>🏠</span> Your Active Lobbies
-              </h2>
-              <div className="space-y-4">
-                {activeRooms.map((room) => (
-                  <div key={room._id} className="p-4 rounded-xl border border-white/5 bg-white/3 hover:border-primary-500/20 hover:shadow-glow-purple-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
-                    <div>
-                      {/* Header */}
-                      <div className="flex justify-between items-start mb-2.5">
-                        <span className="text-[9px] uppercase font-bold tracking-widest text-primary-400">
-                          Active Room
-                        </span>
-                        <span className="text-[10px] text-white/40 font-medium">
-                          Code: <span className="font-mono text-primary-300 font-bold">{room.code}</span>
-                        </span>
-                      </div>
-
-                      <h3 className="font-display font-bold text-white text-sm mb-1 truncate">
-                        {room.name}
-                      </h3>
-                      <p className="text-white/40 text-[10px] mb-3">
-                        Host: {room.host?.username || 'You'} · {room.members?.length || 1} member{room.members?.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-2.5 border-t border-white/5 mt-auto">
-                      <span className="text-[9px] text-white/30">
-                        Created: {new Date(room.createdAt).toLocaleDateString()}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeRooms.map((room) => (
+                <div key={room._id} className="p-4 rounded-xl border border-white/5 bg-white/3 hover:border-primary-500/20 hover:shadow-glow-purple-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+                  <div>
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-2.5">
+                      <span className="text-[9px] uppercase font-bold tracking-widest text-primary-400">
+                        Active Room
                       </span>
-                      <Link
-                        to={`/room/${room._id}`}
-                        className="text-xs text-primary-400 hover:underline flex items-center gap-1 font-semibold"
-                      >
-                        Enter Room
-                        <FiArrowRight size={12} />
-                      </Link>
+                      <span className="text-[10px] text-white/40 font-medium">
+                        Code: <span className="font-mono text-primary-300 font-bold">{room.code}</span>
+                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
+                    <h3 className="font-display font-bold text-white text-sm mb-1 truncate">
+                      {room.name}
+                    </h3>
+                    <p className="text-white/40 text-[10px] mb-3">
+                      Host: {room.host?.username || 'You'} · {room.members?.length || 1} member{room.members?.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2.5 border-t border-white/5 mt-auto">
+                    <span className="text-[9px] text-white/30">
+                      Created: {new Date(room.createdAt).toLocaleDateString()}
+                    </span>
+                    <Link
+                      to={`/room/${room._id}`}
+                      className="text-xs text-primary-400 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      Enter Room
+                      <FiArrowRight size={12} />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scheduled Outings & Mood Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {/* Scheduled Outings */}
           <div className="glass-card p-5 animate-slide-up">
             <h2 className="font-display font-bold text-base text-white mb-4 flex items-center gap-2">
@@ -602,7 +520,7 @@ const UserHome = ({ user }) => {
                           rel="noopener noreferrer"
                           className="text-xs text-neon-green hover:underline flex items-center gap-1 font-semibold"
                         >
-                          Get Directions
+                          Directions
                           <FiExternalLink size={12} />
                         </a>
                       )}
@@ -613,27 +531,33 @@ const UserHome = ({ user }) => {
             )}
           </div>
 
-          {/* Activity strip */}
+          {/* Today's Mood */}
           <div className="glass-card p-5 animate-slide-up">
             <p className="text-white/30 text-xs uppercase tracking-widest font-semibold mb-4">Today's mood?</p>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex flex-col gap-2.5">
               {[
-                { emoji: '😌', label: 'Chill', mood: 'chill' },
-                { emoji: '🍕', label: 'Foodie', mood: 'foodie' },
-                { emoji: '🧗', label: 'Adventure', mood: 'adventure' },
-                { emoji: '🌅', label: 'Romantic', mood: 'romantic' },
-                { emoji: '📚', label: 'Study', mood: 'study' },
+                { emoji: '😌', label: 'Chill', mood: 'chill', desc: 'Parks, cafes, lakesides' },
+                { emoji: '🍕', label: 'Foodie', mood: 'foodie', desc: 'Restaurants, cafes, bakeries' },
+                { emoji: '🧗', label: 'Adventure', mood: 'adventure', desc: 'Peaks, beaches, attractions' },
+                { emoji: '🌅', label: 'Romantic', mood: 'romantic', desc: 'Viewpoints, romantic spots' },
+                { emoji: '📚', label: 'Study', mood: 'study', desc: 'Cafes, libraries, quiet spots' },
               ].map((m) => (
                 <Link
                   key={m.mood}
                   to={`/explore`}
                   state={{ mood: m.mood }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 
-                             text-white/60 text-xs hover:bg-primary-500/10 hover:border-primary-500/20 
-                             hover:text-primary-300 transition-all duration-200"
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 
+                             text-white/80 hover:bg-primary-500/10 hover:border-primary-500/20 
+                             hover:text-primary-300 hover:shadow-glow-purple-sm transition-all duration-200 group"
                 >
-                  <span>{m.emoji}</span>
-                  <span>{m.label}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{m.emoji}</span>
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-white group-hover:text-primary-300 transition-colors">{m.label}</p>
+                      <p className="text-[10px] text-white/35">{m.desc}</p>
+                    </div>
+                  </div>
+                  <FiArrowRight size={14} className="text-white/20 group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
                 </Link>
               ))}
             </div>

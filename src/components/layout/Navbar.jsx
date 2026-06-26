@@ -6,7 +6,7 @@ import { notificationService } from '../../services/notificationService';
 import { chatService } from '../../services/chatService';
 import { toast } from 'react-toastify';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLogOut, FiUser, FiCompass, FiUsers, FiBell, FiCheck, FiMessageSquare } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiCompass, FiUsers, FiBell, FiCheck, FiMessageSquare, FiImage } from 'react-icons/fi';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -131,6 +131,7 @@ const Navbar = () => {
   ];
 
   if (isAuthenticated) {
+    navLinks.unshift({ path: '/feed', label: 'Feed', icon: <FiImage size={18} /> });
     navLinks.push({ path: '/messages', label: 'Chats', icon: <FiMessageSquare size={18} /> });
   }
 
