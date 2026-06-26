@@ -6,9 +6,9 @@
 
 ## ✨ Features
 
-- 🔐 **JWT Auth integration** — Secure logins and signups with token persistence in localStorage and React Router route guards (Protected vs Guest routes).
+- 🔐 **JWT Auth integration** — Secure logins and signups with token persistence in sessionStorage and React Router route guards (Protected vs Guest routes).
 - 🧭 **Explore Mode (Solo Place Finder)** — Browser geolocation capturing, mood filter selectors, radius indicator sliders, debounced location search autocomplete suggestions dropdown, visual category gradients for placeholder photos, and Google Maps direction integrations.
-- 👤 **Saved Places Collection** — Profile page displaying personal user details and a list of saved venues with links and removal buttons.
+- 👤 **Saved Places & Profile** — Profile page displaying user info, saved venues with Google Maps links, and the **Trip Memories Diary** to upload photo memories publicly or privately.
 - 🏠 **Lobby Join & Create** — Lobbies created with name inputs and copy-to-clipboard buttons, alongside OTP-styled 6-character room code entry boxes.
 - 💬 **Socket Chat & Presence** — Sidebar tracking active room members, host tags, online indicators, and group text chat with system join/leave notices.
 - 🎮 **Game Lounge & Live Voting** — Lists of browser games with live voting panels (yes, no, maybe progress bars and host early end overrides).
@@ -16,6 +16,7 @@
 - 📚 **Study Lounge (Pomodoro & Tasks)** — Synced circular SVG countdown timers for Work/Break phases, alongside personal local Todo checklists.
 - 📍 **Outing Lounge (midpoint planning)** — Geolocation submissions, submission status rosters, midpoint centroid search aggregations, and results place voting.
 - 💬 **Private Direct Messaging (DM)** — Search for usernames (preventing self-search), send chat requests, approve pending incoming requests, and chat in real-time. Displays a pulsing red notification dot in the Navbar, an Unread Messages Banner on the Home dashboard, real-time DM toaster alerts, and automatic read tracking/synchronization.
+- 📸 **Interactive Community Feed** — Dedicated social feed page displaying public memories from all community members with Instagram-like styling. Features an active members story bar, togglable photo likes with pop micro-animations, and live comment threads.
 
 ---
 
@@ -43,23 +44,24 @@ frontend/
 │   ├── components/           # Reusable view components
 │   │   ├── common/           # Custom standard buttons / forms
 │   │   ├── layout/           # Navbar component
-│   │   ├── games/            # GameList, GameVoting modules (Phase 4)
-│   │   ├── movies/           # MovieFilters, MovieCard, WatchLounge (Phase 5)
-│   │   ├── outing/           # OutingFilters, OutingResults, OutingLounge (Phase 6)
-│   │   └── places/           # PlaceCard list items (Phase 2)
+│   │   ├── games/            # GameList, GameVoting modules
+│   │   ├── movies/           # MovieFilters, MovieCard, WatchLounge
+│   │   ├── outing/           # OutingFilters, OutingResults, OutingLounge
+│   │   └── places/           # PlaceCard list items
 │   ├── context/
 │   │   ├── AuthContext.jsx   # User authentication provider
 │   │   └── SocketContext.jsx # Socket.io-client provider
 │   ├── hooks/
 │   │   └── useGeolocation.js # Navigator geolocation hook
 │   ├── pages/
-│   │   ├── Home.jsx          # Mode selector landing page
+│   │   ├── Home.jsx          # Mode selector landing page & user dashboard
 │   │   ├── Login.jsx         # Login form
 │   │   ├── Register.jsx      # Registration form
 │   │   ├── Explore.jsx       # Solo place finder explorer
 │   │   ├── CreateRoom.jsx    # Room creator & code copy
 │   │   ├── JoinRoom.jsx      # OTP room code input
-│   │   ├── Profile.jsx       # User details & favorites list
+│   │   ├── Profile.jsx       # User details, saved places, & memories diary
+│   │   ├── Feed.jsx          # Instagram-style community trip feed page
 │   │   ├── Room.jsx          # Synced collaborative room panels
 │   │   └── DirectMessages.jsx # Unified DM sidebar search & chat workspace
 │   ├── services/
@@ -67,6 +69,7 @@ frontend/
 │   │   ├── authService.js    # Register/Login requests
 │   │   ├── placeService.js   # Save/Load place requests
 │   │   ├── roomService.js    # Create/Join/Get room endpoints
+│   │   ├── memoryService.js  # Upload/Fetch memories and feed
 │   │   └── chatService.js    # Search, request actions, and DM requests
 │   ├── App.jsx               # Protected/Guest Route routing wraps
 │   ├── main.jsx              # React mounting root
