@@ -28,12 +28,10 @@ const Feed = () => {
       const data = await memoryService.getFeed();
       setFeed(data || []);
       
-      // Initialize mock likes count based on creation time or randomly to look natural
+      // Initialize likes count to 0 for everyone's post
       const initialLikes = {};
       data.forEach(post => {
-        // Deterministic mock likes count
-        const charSum = post._id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        initialLikes[post._id] = (charSum % 45) + 3;
+        initialLikes[post._id] = 0;
       });
       setLikeCounts(initialLikes);
     } catch (err) {
