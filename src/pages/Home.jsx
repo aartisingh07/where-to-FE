@@ -5,7 +5,8 @@ import { useSocket } from '../context/SocketContext';
 import { toast } from 'react-toastify';
 import {
   FiArrowRight, FiMapPin, FiUsers, FiZap, FiHeart,
-  FiCompass, FiHash, FiUser, FiSunrise, FiExternalLink, FiClock, FiTrash2, FiCheck, FiX
+  FiCompass, FiHash, FiUser, FiSunrise, FiExternalLink, FiClock, FiTrash2, FiCheck, FiX,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { outingPlanService } from '../services/outingPlanService';
 import { roomService } from '../services/roomService';
@@ -28,6 +29,11 @@ const GuestHome = () => {
       icon: <FiZap className="text-neon-yellow" size={24} />,
       title: 'Instant Decisions',
       desc: 'Vote on games, movies, or hangout spots — no more "I don\'t know, you decide" loops.',
+    },
+    {
+      icon: <FiMessageSquare className="text-accent-300" size={24} />,
+      title: 'Direct Chatting',
+      desc: 'Chat directly and privately with friends without joining room codes by sending requests.',
     },
     {
       icon: <FiHeart className="text-accent-500" size={24} />,
@@ -76,7 +82,7 @@ const GuestHome = () => {
 
       {/* Mode Cards */}
       <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link to="/explore" className="group block">
             <div className="glass-card p-8 h-full transition-all duration-500 hover:border-neon-teal/30 hover:shadow-glow-teal group-hover:-translate-y-2">
               <div className="flex items-center gap-3 mb-4">
@@ -114,6 +120,24 @@ const GuestHome = () => {
               </div>
             </div>
           </Link>
+
+          <Link to="/register" className="group block">
+            <div className="glass-card p-8 h-full transition-all duration-500 hover:border-accent-500/30 hover:shadow-glow-pink group-hover:-translate-y-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center text-2xl">💬</div>
+                <span className="badge-pink text-xs">Direct Chat</span>
+              </div>
+              <h2 className="font-display font-bold text-2xl text-white mb-3">Direct Messaging (DMs)</h2>
+              <p className="text-white/40 leading-relaxed mb-6">
+                Want to talk without joining a room? Search for friends by username, send a chat request, and start chatting privately in real-time.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {['🔍 Search Users', '✉️ Requests', '💬 Direct Chat', '⚡ Real-time', '🔔 Alerts'].map((tag) => (
+                  <span key={tag} className="px-3 py-1 rounded-lg bg-white/5 text-white/50 text-sm">{tag}</span>
+                ))}
+              </div>
+            </div>
+          </Link>
         </div>
       </section>
 
@@ -128,7 +152,7 @@ const GuestHome = () => {
               Because every friend group deserves better than 47 messages that end with "chal tu hi decide kar."
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {features.map((feature, index) => (
               <div key={index} className="glass-card-hover p-6 text-center">
                 <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-4">
