@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiSend, FiLogOut, FiHash, FiUsers, FiMessageCircle, FiExternalLink, FiClock } from 'react-icons/fi';
+import { FiSend, FiLogOut, FiHash, FiUsers, FiMessageCircle, FiExternalLink, FiClock, FiTrash2, FiEdit2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -85,6 +85,10 @@ const Room = () => {
   // Outing Plan State
   const [scheduledPlan, setScheduledPlan] = useState(null);
 
+  // Message Edit State
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState('');
+
   const messagesEndRef = useRef(null);
 
   const isHost = room?.host?._id === user?._id || room?.host === user?._id;
@@ -166,6 +170,18 @@ const Room = () => {
       setMessages((prev) => [...prev, msg]);
     });
 
+    socket.on('message-updated', ({ messageId, content, isEdited }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId ? { ...m, content, isEdited } : m
+        )
+      );
+    });
+
+    socket.on('message-deleted', ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    });
+
     socket.on('room-users-update', (users) => {
       setOnlineUsers(users);
     });
@@ -223,6 +239,8 @@ const Room = () => {
     return () => {
       socket.emit('leave-room', { roomId: id });
       socket.off('new-message');
+      socket.off('message-updated');
+      socket.off('message-deleted');
       socket.off('room-users-update');
       socket.off('activity-changed');
       socket.off('vote-started');
@@ -240,8 +258,24 @@ const Room = () => {
 
   const sendMessage = () => {
     if (!messageInput.trim() || !socket) return;
-    socket.emit('send-message', { roomId: id, content: messageInput });
+    socket.emit('send-message', { roomId: id, content: messageInput.trim() });
     setMessageInput('');
+  };
+
+  const handleStartEdit = (msgId, content) => {
+    setEditingMessageId(msgId);
+    setEditingText(content);
+  };
+
+  const handleSaveEdit = (msgId) => {
+    if (!editingText.trim() || !socket) return;
+    socket.emit('edit-message', { roomId: id, messageId: msgId, content: editingText.trim() });
+    setEditingMessageId(null);
+  };
+
+  const handleDeleteMsg = (msgId) => {
+    if (!window.confirm('Are you sure you want to delete this message?') || !socket) return;
+    socket.emit('delete-message', { roomId: id, messageId: msgId });
   };
 
   const handlePropose = (item) => {
@@ -579,19 +613,77 @@ const Room = () => {
                 );
               }
 
+              const isEditable = Date.now() - new Date(msg.createdAt).getTime() < 30 * 60 * 1000;
+
               return (
-                <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group relative mb-1.5`}>
                   {!isMe && (
                     <p className="text-white/30 text-[10px] mb-1 px-1">{msg.senderName}</p>
                   )}
-                  <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm break-words
-                    ${isMe
-                      ? 'bg-primary-500/20 text-white rounded-tr-sm border border-primary-500/20'
-                      : 'bg-white/5 text-white/80 rounded-tl-sm border border-white/5'
-                    }`}>
-                    {msg.content}
+
+                  <div className={`flex items-center gap-1.5 max-w-[90%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                    
+                    {/* Action buttons (only for own messages) */}
+                    {isMe && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-0.5 bg-dark-950/60 border border-white/5 rounded-lg p-0.5 shadow-sm flex-shrink-0">
+                        {isEditable && (
+                          <button
+                            onClick={() => handleStartEdit(msg._id, msg.content)}
+                            className="p-1 text-white/40 hover:text-primary-300 rounded hover:bg-white/5 transition-colors cursor-pointer"
+                            title="Edit message"
+                          >
+                            <FiEdit2 size={10} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteMsg(msg._id)}
+                          className="p-1 text-white/40 hover:text-red-400 rounded hover:bg-white/5 transition-colors cursor-pointer"
+                          title="Delete message"
+                        >
+                          <FiTrash2 size={10} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Message Bubble */}
+                    <div className={`px-3 py-2 rounded-2xl text-xs sm:text-sm break-words
+                      ${isMe
+                        ? 'bg-primary-500/20 text-white rounded-tr-sm border border-primary-500/20 shadow-glow-purple-sm'
+                        : 'bg-white/5 text-white/80 rounded-tl-sm border border-white/5'
+                      }`}>
+                      {editingMessageId === msg._id ? (
+                        <div className="flex flex-col gap-1 min-w-[160px]">
+                          <input
+                            type="text"
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="w-full bg-dark-900/60 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-primary-500 transition-all"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit(msg._id);
+                              if (e.key === 'Escape') setEditingMessageId(null);
+                            }}
+                          />
+                          <div className="flex gap-1 justify-end">
+                            <button onClick={() => setEditingMessageId(null)} className="px-1.5 py-0.5 rounded hover:bg-white/5 text-[9px] text-white/40">
+                              Cancel
+                            </button>
+                            <button onClick={() => handleSaveEdit(msg._id)} className="px-1.5 py-0.5 rounded bg-primary-500/20 text-[9px] text-primary-300 font-semibold">
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          {msg.content}
+                          {msg.isEdited && (
+                            <span className="text-[9px] text-white/20 italic ml-1.5" title="Edited message">(edited)</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-white/20 text-[10px] mt-0.5 px-1">
+
+                  <p className="text-white/20 text-[10px] mt-0.5 px-1 font-mono">
                     {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>

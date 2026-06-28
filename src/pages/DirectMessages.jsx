@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { chatService } from '../services/chatService';
 import { toast } from 'react-toastify';
-import { FiSend, FiUser, FiMessageSquare, FiClock, FiPlusCircle, FiCheck, FiX } from 'react-icons/fi';
+import { FiSend, FiUser, FiMessageSquare, FiClock, FiPlusCircle, FiCheck, FiX, FiTrash2, FiEdit2 } from 'react-icons/fi';
 
 const DirectMessages = () => {
   const { user } = useAuth();
@@ -17,6 +17,10 @@ const DirectMessages = () => {
   const [messageInput, setMessageInput] = useState('');
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Edit State
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState('');
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,6 +151,9 @@ const DirectMessages = () => {
 
     const messageEvent = `direct-message-${user._id}`;
     const relationshipEvent = `chat-relationship-updated-${user._id}`;
+    const messageUpdateEvent = `direct-message-updated-${user._id}`;
+    const messageDeleteEvent = `direct-message-deleted-${user._id}`;
+    const conversationDeleteEvent = `direct-conversation-deleted-${user._id}`;
 
     const handleNewMessage = (newMsg) => {
       // If the message is part of our active conversation
@@ -163,6 +170,29 @@ const DirectMessages = () => {
       fetchChatsAndRequests();
     };
 
+    const handleMessageUpdate = (updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === updatedMsg.messageId
+            ? { ...m, content: updatedMsg.content, isEdited: true }
+            : m
+        )
+      );
+      fetchChatsAndRequests();
+    };
+
+    const handleMessageDelete = ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+      fetchChatsAndRequests();
+    };
+
+    const handleConversationDelete = ({ otherUserId }) => {
+      if (activeChat && activeChat.user._id === otherUserId) {
+        setMessages([]);
+      }
+      fetchChatsAndRequests();
+    };
+
     const handleRelationshipUpdate = ({ otherUserId, status }) => {
       fetchChatsAndRequests();
       
@@ -175,10 +205,16 @@ const DirectMessages = () => {
 
     socket.on(messageEvent, handleNewMessage);
     socket.on(relationshipEvent, handleRelationshipUpdate);
+    socket.on(messageUpdateEvent, handleMessageUpdate);
+    socket.on(messageDeleteEvent, handleMessageDelete);
+    socket.on(conversationDeleteEvent, handleConversationDelete);
 
     return () => {
       socket.off(messageEvent, handleNewMessage);
       socket.off(relationshipEvent, handleRelationshipUpdate);
+      socket.off(messageUpdateEvent, handleMessageUpdate);
+      socket.off(messageDeleteEvent, handleMessageDelete);
+      socket.off(conversationDeleteEvent, handleConversationDelete);
     };
   }, [socket, user?._id, activeChat, fetchChatsAndRequests, handleMarkAsRead]);
 
@@ -186,6 +222,43 @@ const DirectMessages = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleStartEdit = (msgId, content) => {
+    setEditingMessageId(msgId);
+    setEditingText(content);
+  };
+
+  const handleSaveEdit = async (msgId) => {
+    if (!editingText.trim()) return;
+    try {
+      await chatService.editMessage(msgId, editingText.trim());
+      setEditingMessageId(null);
+      toast.success('Message updated');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to edit message');
+    }
+  };
+
+  const handleDeleteMsg = async (msgId) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) return;
+    try {
+      await chatService.deleteMessage(msgId);
+      toast.success('Message deleted');
+    } catch (err) {
+      toast.error('Failed to delete message');
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!activeChat) return;
+    if (!window.confirm(`Are you sure you want to clear your chat history with ${activeChat.user.username}? This will delete all messages permanently.`)) return;
+    try {
+      await chatService.deleteConversation(activeChat.user._id);
+      toast.success('Conversation history cleared');
+    } catch (err) {
+      toast.error('Failed to clear conversation');
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !activeChat) return;
@@ -441,7 +514,7 @@ const DirectMessages = () => {
         {activeChat ? (
           <>
             {/* Active Chat Header */}
-            <div className="px-6 py-4 border-b border-white/5 bg-dark-950/40 flex items-center gap-3 flex-shrink-0">
+            <div className="px-6 py-4 border-b border-white/5 bg-dark-950/40 flex items-center justify-between flex-shrink-0">
               <Link to={`/profile/${activeChat.user._id}`} className="flex items-center gap-3 group" title="View Profile">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 p-0.5 group-hover:scale-105 transition-transform duration-200">
                   <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
@@ -456,10 +529,19 @@ const DirectMessages = () => {
                   <p className="font-display font-bold text-white text-sm leading-tight group-hover:text-primary-300 transition-colors">{activeChat.user.username}</p>
                   <span className="inline-flex items-center gap-1 text-[10px] text-neon-green font-semibold mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                    Active connection · View Profile →
+                    Active connection &middot; View Profile &rarr;
                   </span>
                 </div>
               </Link>
+
+              <button
+                onClick={handleDeleteConversation}
+                className="px-3 py-1.5 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/15 hover:border-red-500/30 text-red-400 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                title="Clear Chat History"
+              >
+                <FiTrash2 size={13} />
+                <span>Clear Chat</span>
+              </button>
             </div>
 
             {/* Messages Area */}
@@ -477,15 +559,72 @@ const DirectMessages = () => {
               ) : (
                 messages.map((msg) => {
                   const isMe = msg.sender.toString() === user?._id.toString();
+                  const isEditable = Date.now() - new Date(msg.createdAt).getTime() < 30 * 60 * 1000;
+
                   return (
-                    <div key={msg._id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm break-words leading-relaxed shadow-sm
-                        ${isMe
-                          ? 'bg-primary-500/20 text-white rounded-tr-sm border border-primary-500/25 shadow-glow-purple-sm'
-                          : 'bg-white/5 text-white/80 rounded-tl-sm border border-white/5'
-                        }`}>
-                        {msg.content}
+                    <div key={msg._id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group relative mb-2`}>
+                      <div className={`flex items-center gap-2 max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                        
+                        {/* Action buttons (only for own messages) */}
+                        {isMe && (
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-0.5 bg-dark-950/60 border border-white/5 rounded-lg p-0.5 shadow-sm flex-shrink-0">
+                            {isEditable && (
+                              <button
+                                onClick={() => handleStartEdit(msg._id, msg.content)}
+                                className="p-1 text-white/40 hover:text-primary-300 rounded hover:bg-white/5 transition-colors cursor-pointer"
+                                title="Edit message"
+                              >
+                                <FiEdit2 size={11} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteMsg(msg._id)}
+                              className="p-1 text-white/40 hover:text-red-400 rounded hover:bg-white/5 transition-colors cursor-pointer"
+                              title="Delete message"
+                            >
+                              <FiTrash2 size={11} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Message content bubble */}
+                        <div className={`px-4 py-2.5 rounded-2xl text-sm break-words leading-relaxed shadow-sm
+                          ${isMe
+                            ? 'bg-primary-500/20 text-white rounded-tr-sm border border-primary-500/25 shadow-glow-purple-sm'
+                            : 'bg-white/5 text-white/80 rounded-tl-sm border border-white/5'
+                          }`}>
+                          {editingMessageId === msg._id ? (
+                            <div className="flex flex-col gap-1.5 min-w-[200px]">
+                              <input
+                                type="text"
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                className="w-full bg-dark-900/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary-500 transition-all"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveEdit(msg._id);
+                                  if (e.key === 'Escape') setEditingMessageId(null);
+                                }}
+                              />
+                              <div className="flex gap-1.5 justify-end">
+                                <button onClick={() => setEditingMessageId(null)} className="px-2 py-0.5 rounded hover:bg-white/5 text-[9px] text-white/40">
+                                  Cancel
+                                </button>
+                                <button onClick={() => handleSaveEdit(msg._id)} className="px-2 py-0.5 rounded bg-primary-500/20 text-[9px] text-primary-300 font-semibold">
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              {msg.content}
+                              {msg.isEdited && (
+                                <span className="text-[9px] text-white/20 italic ml-1.5 font-normal" title="Edited message">(edited)</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
+
                       <span className="text-[9px] text-white/20 font-mono mt-1 px-1">
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>

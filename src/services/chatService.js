@@ -45,4 +45,19 @@ export const chatService = {
     const response = await api.post(`/chats/mark-read/${senderId}`);
     return response.data;
   },
+
+  editMessage: async (messageId, content) => {
+    const response = await api.put(`/chats/message/${messageId}`, { content });
+    return response.data;
+  },
+
+  deleteMessage: async (messageId) => {
+    const response = await api.delete(`/chats/message/${messageId}`);
+    return response.data;
+  },
+
+  deleteConversation: async (otherUserId) => {
+    const response = await api.delete(`/chats/conversation/${otherUserId}`);
+    return response.data;
+  },
 };
