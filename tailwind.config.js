@@ -7,39 +7,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Core dark palette
+        // Core dark palette (Navy Blue System)
         dark: {
-          900: '#0a0a0f',
-          800: '#12121a',
-          700: '#1a1a2e',
-          600: '#22223a',
-          500: '#2a2a42',
+          900: '#050B14',
+          800: '#0A1424',
+          700: '#102038',
+          600: '#1A2F4C',
+          500: '#243E60',
         },
-        // Primary — Electric Violet
+        // Primary — Vibrant Royal Blue
         primary: {
-          50: '#f3e8ff',
-          100: '#e4ccff',
-          200: '#c896ff',
-          300: '#ab5eff',
-          400: '#9333ea',
-          500: '#7c3aed',
-          600: '#6d28d9',
-          700: '#5b21b6',
-          800: '#4c1d95',
-          900: '#3b0764',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-        // Accent — Hot Pink
+        // Accent — Radiant Cyan/Teal
         accent: {
-          50: '#fdf2f8',
-          100: '#fce7f3',
-          200: '#fbcfe8',
-          300: '#f9a8d4',
-          400: '#f472b6',
-          500: '#ec4899',
-          600: '#db2777',
-          700: '#be185d',
-          800: '#9d174d',
-          900: '#831843',
+          50: '#ecfeff',
+          100: '#cffafe',
+          200: '#a5f3fc',
+          300: '#67e8f9',
+          400: '#22d3ee',
+          500: '#06b6d4',
+          600: '#0891b2',
+          700: '#0e7490',
+          800: '#155e75',
+          900: '#164e63',
         },
         // Neon teal for success / study mode
         neon: {
@@ -56,17 +56,18 @@ export default {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'hero-gradient': 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #2a2a42 100%)',
-        'card-gradient': 'linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.1))',
-        'button-gradient': 'linear-gradient(135deg, #7c3aed, #ec4899)',
-        'button-gradient-hover': 'linear-gradient(135deg, #6d28d9, #db2777)',
+        'hero-gradient': 'linear-gradient(135deg, #050B14 0%, #102038 50%, #243E60 100%)',
+        'card-gradient': 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.1))',
+        'button-gradient': 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+        'button-gradient-hover': 'linear-gradient(135deg, #2563eb, #0891b2)',
       },
       boxShadow: {
-        'glow-purple': '0 0 20px rgba(124, 58, 237, 0.3)',
-        'glow-pink': '0 0 20px rgba(236, 72, 153, 0.3)',
-        'glow-teal': '0 0 20px rgba(45, 212, 191, 0.3)',
+        'glow-purple': '0 0 20px rgba(59, 130, 246, 0.3)',
+        'glow-purple-sm': '0 0 10px rgba(59, 130, 246, 0.2)',
+        'glow-pink': '0 0 20px rgba(6, 182, 212, 0.3)',
+        'glow-teal': '0 0 20px rgba(6, 182, 212, 0.3)',
         'card': '0 4px 24px rgba(0, 0, 0, 0.2)',
-        'card-hover': '0 8px 40px rgba(124, 58, 237, 0.2)',
+        'card-hover': '0 8px 40px rgba(59, 130, 246, 0.2)',
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
@@ -83,8 +84,8 @@ export default {
           '50%': { transform: 'translateY(-20px)' },
         },
         pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(124, 58, 237, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(59, 130, 246, 0.6)' },
         },
         slideUp: {
           '0%': { transform: 'translateY(20px)', opacity: '0' },

@@ -44,7 +44,7 @@ const games = [
     desc: 'The popular online board game of tokens, paths, and lucky dice rolls.',
     players: '2-6 Players',
     link: 'https://ludoking.com/',
-    color: 'from-purple-500 to-violet-500',
+    color: 'from-blue-500 to-cyan-500',
   },
 ];
 

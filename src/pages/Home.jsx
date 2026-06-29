@@ -126,7 +126,7 @@ const GuestHome = () => {
             <div className="glass-card p-8 h-full transition-all duration-500 hover:border-accent-500/30 hover:shadow-glow-pink group-hover:-translate-y-2">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center text-2xl">💬</div>
-                <span className="badge-pink text-xs">Direct Chat</span>
+                <span className="badge-cyan text-xs">Direct Chat</span>
               </div>
               <h2 className="font-display font-bold text-2xl text-white mb-3">Direct Messaging (DMs)</h2>
               <p className="text-white/40 leading-relaxed mb-6">
@@ -313,7 +313,7 @@ const UserHome = ({ user }) => {
       desc: 'Enter a 6-digit code to join friends',
       to: '/join-room',
       color: 'hover:border-accent-500/30 hover:shadow-glow-pink',
-      badge: <span className="badge-pink text-xs">Use code</span>,
+      badge: <span className="badge-cyan text-xs">Use code</span>,
     },
     {
       emoji: '❤️',

@@ -18,7 +18,7 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #0a0a0f;
+    background-color: #050B14;
     color: #e2e8f0;
     min-height: 100vh;
     overflow-x: hidden;
@@ -32,16 +32,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #12121a;
+    background: #0A1424;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #7c3aed;
+    background: #3b82f6;
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #9333ea;
+    background: #60a5fa;
   }
 }
 
@@ -94,8 +94,8 @@
   /* Animated background grid */
   .bg-grid {
     background-image: 
-      linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 
@@ -113,7 +113,7 @@
     @apply badge bg-primary-500/20 text-primary-300 border border-primary-500/20;
   }
 
-  .badge-pink {
+  .badge-cyan {
     @apply badge bg-accent-500/20 text-accent-300 border border-accent-500/20;
   }
 
@@ -135,7 +135,7 @@
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -173,5 +173,5 @@
 }
 
 .Toastify__progress-bar {
-  background: linear-gradient(to right, #7c3aed, #ec4899) !important;
+  background: linear-gradient(to right, #3b82f6, #06b6d4) !important;
 }
