@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FiSend, FiLogOut, FiHash, FiUsers, FiMessageCircle, FiExternalLink, FiClock, FiTrash2, FiEdit2 } from 'react-icons/fi';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { FiSend, FiLogOut, FiHash, FiUsers, FiMessageCircle, FiExternalLink, FiClock, FiTrash2, FiEdit2, FiUserPlus, FiCheck } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { roomService } from '../services/roomService';
 import { outingPlanService } from '../services/outingPlanService';
+import { chatService } from '../services/chatService';
 import GameList from '../components/games/GameList';
 import GameVoting from '../components/games/GameVoting';
 import WatchLounge from '../components/movies/WatchLounge';
@@ -88,6 +89,24 @@ const Room = () => {
   // Message Edit State
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingText, setEditingText] = useState('');
+
+  // Chat Relationships State
+  const [relationships, setRelationships] = useState({});
+
+  // Load chat relationships
+  useEffect(() => {
+    const fetchRelationships = async () => {
+      try {
+        const data = await chatService.getRelationships();
+        setRelationships(data);
+      } catch (err) {
+        console.error('Failed to fetch relationships:', err);
+      }
+    };
+    if (user) {
+      fetchRelationships();
+    }
+  }, [user]);
 
   const messagesEndRef = useRef(null);
 
@@ -236,6 +255,16 @@ const Room = () => {
       toast.info("The upcoming outing plan has been cancelled by the host.");
     });
 
+    socket.on(`chat-relationship-updated-${user?._id}`, ({ otherUserId, status, requestId }) => {
+      setRelationships((prev) => ({
+        ...prev,
+        [otherUserId]: {
+          status,
+          requestId: requestId || prev[otherUserId]?.requestId
+        }
+      }));
+    });
+
     return () => {
       socket.emit('leave-room', { roomId: id });
       socket.off('new-message');
@@ -248,6 +277,7 @@ const Room = () => {
       socket.off('vote-result');
       socket.off('outing-plan-scheduled');
       socket.off('outing-plan-cancelled');
+      socket.off(`chat-relationship-updated-${user?._id}`);
     };
   }, [socket, room, id, user?._id, fetchRoomPlan]);
 
@@ -255,6 +285,81 @@ const Room = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleSendChatRequest = async (receiverId, receiverName) => {
+    try {
+      const response = await chatService.sendRequest(receiverId);
+      setRelationships((prev) => ({
+        ...prev,
+        [receiverId.toString()]: {
+          status: 'pending_sent',
+          requestId: response._id
+        }
+      }));
+      toast.success(`Chat request sent to ${receiverName}!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send chat request');
+    }
+  };
+
+  const handleAcceptChatRequest = async (requestId, senderId, senderName) => {
+    try {
+      await chatService.handleRequest(requestId, 'accept');
+      setRelationships((prev) => ({
+        ...prev,
+        [senderId.toString()]: {
+          status: 'accepted',
+          requestId
+        }
+      }));
+      toast.success(`Accepted chat request from ${senderName}!`);
+    } catch (err) {
+      toast.error('Failed to accept chat request');
+    }
+  };
+
+  const renderChatRequestButton = (senderId, senderName) => {
+    if (!senderId || senderId.toString() === user?._id?.toString()) return null;
+
+    const rel = relationships[senderId.toString()];
+    const status = rel?.status || 'none';
+    const requestId = rel?.requestId;
+
+    if (status === 'accepted') {
+      return null;
+    }
+
+    if (status === 'pending_sent') {
+      return (
+        <span className="inline-flex items-center gap-1 text-[9px] text-white/40 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-full font-sans">
+          <FiClock size={9} className="animate-pulse" />
+          Requested
+        </span>
+      );
+    }
+
+    if (status === 'pending_received') {
+      return (
+        <button
+          onClick={() => handleAcceptChatRequest(requestId, senderId, senderName)}
+          className="inline-flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all font-sans cursor-pointer font-semibold"
+        >
+          <FiCheck size={9} />
+          Accept Request
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => handleSendChatRequest(senderId, senderName)}
+        className="inline-flex items-center gap-1 text-[9px] text-primary-300 bg-primary-500/10 border border-primary-500/20 px-1.5 py-0.5 rounded-full hover:bg-primary-500/20 hover:border-primary-500/30 hover:shadow-glow-purple-sm transition-all font-sans cursor-pointer font-semibold"
+      >
+        <FiUserPlus size={9} />
+        Connect
+      </button>
+    );
+  };
 
   const sendMessage = () => {
     if (!messageInput.trim() || !socket) return;
@@ -437,7 +542,11 @@ const Room = () => {
               const isOnline = onlineUsers.some((u) => u.userId === memberId);
               const isRoomHost = memberId === (room?.host?._id || room?.host);
               return (
-                <div key={memberId} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/3">
+                <Link
+                  key={memberId}
+                  to={`/profile/${memberId}`}
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/3 transition-colors cursor-pointer"
+                >
                   <div className="relative flex-shrink-0">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-xs font-bold text-white">
                       {memberUsername[0]?.toUpperCase()}
@@ -448,7 +557,7 @@ const Room = () => {
                     <p className="text-white text-xs font-medium truncate">{memberUsername}</p>
                     {isRoomHost && <p className="text-primary-400 text-[10px]">Host</p>}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -618,7 +727,12 @@ const Room = () => {
               return (
                 <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group relative mb-1.5`}>
                   {!isMe && (
-                    <p className="text-white/30 text-[10px] mb-1 px-1">{msg.senderName}</p>
+                    <div className="flex items-center gap-2 mb-1 px-1 flex-wrap">
+                      <Link to={`/profile/${msg.sender}`} className="text-white/40 hover:text-primary-300 text-[10px] font-medium transition-colors cursor-pointer">
+                        {msg.senderName}
+                      </Link>
+                      {renderChatRequestButton(msg.sender, msg.senderName)}
+                    </div>
                   )}
 
                   <div className={`flex items-center gap-1.5 max-w-[90%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>

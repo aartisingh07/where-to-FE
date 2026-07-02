@@ -260,6 +260,18 @@ const DirectMessages = () => {
     }
   };
 
+  const handleRemoveConnection = async () => {
+    if (!activeChat) return;
+    if (!window.confirm(`Are you sure you want to remove ${activeChat.user.username} from your chats? You will no longer receive any messages from them.`)) return;
+    try {
+      await chatService.removeConnection(activeChat.user._id);
+      setActiveChat(null);
+      toast.success('Removed user from chats');
+    } catch (err) {
+      toast.error('Failed to remove user from chats');
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !activeChat) return;
     const targetUserId = activeChat.user._id;
@@ -534,14 +546,24 @@ const DirectMessages = () => {
                 </div>
               </Link>
 
-              <button
-                onClick={handleDeleteConversation}
-                className="px-3 py-1.5 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/15 hover:border-red-500/30 text-red-400 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
-                title="Clear Chat History"
-              >
-                <FiTrash2 size={13} />
-                <span>Clear Chat</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteConversation}
+                  className="px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                  title="Clear Chat History"
+                >
+                  <FiTrash2 size={13} />
+                  <span>Clear Chat</span>
+                </button>
+                <button
+                  onClick={handleRemoveConnection}
+                  className="px-3 py-1.5 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/15 hover:border-red-500/30 text-red-400 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                  title="Remove from Chats"
+                >
+                  <FiX size={13} />
+                  <span>Remove Chat</span>
+                </button>
+              </div>
             </div>
 
             {/* Messages Area */}

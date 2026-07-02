@@ -1,6 +1,11 @@
 import api from './api';
 
 export const chatService = {
+  getRelationships: async () => {
+    const response = await api.get('/chats/relationships');
+    return response.data;
+  },
+
   searchUser: async (username) => {
     const response = await api.get(`/chats/search?username=${encodeURIComponent(username)}`);
     return response.data;
@@ -58,6 +63,11 @@ export const chatService = {
 
   deleteConversation: async (otherUserId) => {
     const response = await api.delete(`/chats/conversation/${otherUserId}`);
+    return response.data;
+  },
+
+  removeConnection: async (otherUserId) => {
+    const response = await api.delete(`/chats/connection/${otherUserId}`);
     return response.data;
   },
 };

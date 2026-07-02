@@ -4,6 +4,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { placeService } from '../services/placeService';
 import { authService } from '../services/authService';
 import { memoryService } from '../services/memoryService';
+import { chatService } from '../services/chatService';
 import { 
   FiUser, FiCalendar, FiMapPin, FiLogOut, FiTrash2, FiNavigation, 
   FiCamera, FiGlobe, FiLock, FiUsers, FiImage, FiPlus, FiArrowLeft
@@ -33,6 +34,39 @@ const Profile = () => {
   const [visibility, setVisibility] = useState('public');
   const [previewUrl, setPreviewUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+
+  // Chat Connection/Relationship State
+  const [relationship, setRelationship] = useState(null);
+
+  // Load relationship
+  useEffect(() => {
+    const fetchRelationship = async () => {
+      if (isOwnProfile || !userId) return;
+      try {
+        const data = await chatService.getRelationships();
+        if (data && data[userId]) {
+          setRelationship(data[userId]);
+        } else {
+          setRelationship({ status: 'none', requestId: null });
+        }
+      } catch (err) {
+        console.error('Failed to fetch relationship:', err);
+      }
+    };
+    fetchRelationship();
+  }, [userId, isOwnProfile]);
+
+  const handleRemoveConnection = async () => {
+    if (!window.confirm('Are you sure you want to remove this user from your chats? This will clear your chat history and you will no longer receive any messages from them.')) return;
+    try {
+      await chatService.removeConnection(profileUser._id);
+      setRelationship({ status: 'none', requestId: null });
+      toast.success('Removed user from chats successfully');
+      navigate('/messages');
+    } catch (err) {
+      toast.error('Failed to remove user from chats');
+    }
+  };
 
   const fetchProfileAndPlaces = useCallback(async () => {
     try {
@@ -204,7 +238,19 @@ const Profile = () => {
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-neon-green rounded-full border-2 border-dark-800" />
               </div>
               <h1 className="font-display font-bold text-xl text-white mb-1">{profileUser.username}</h1>
-              {isOwnProfile && <p className="text-white/40 text-xs truncate">{profileUser.email}</p>}
+              {isOwnProfile ? (
+                <p className="text-white/40 text-xs truncate">{profileUser.email}</p>
+              ) : (
+                relationship?.status === 'accepted' && (
+                  <button
+                    onClick={handleRemoveConnection}
+                    className="mt-3 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/30 transition-all cursor-pointer shadow-sm w-full"
+                  >
+                    <FiTrash2 size={13} />
+                    Remove from Chats
+                  </button>
+                )
+              )}
             </div>
 
             {/* Stats */}
